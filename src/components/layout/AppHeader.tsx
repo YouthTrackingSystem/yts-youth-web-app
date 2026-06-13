@@ -1,0 +1,39 @@
+import Link from "next/link";
+import { Bell, UserRound } from "lucide-react";
+import type { YouthSessionState } from "@/types/auth";
+
+type AppHeaderProps = {
+  session: YouthSessionState;
+};
+
+export function AppHeader({ session }: AppHeaderProps) {
+  const name = session.status === "authenticated" ? session.user.name : "Youth";
+
+  return (
+    <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <Link href="/dashboard" className="flex flex-col">
+          <span className="text-sm font-semibold text-brand-700">YTS</span>
+          <span className="text-xs text-slate-500">Youth Portal</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            aria-label="Notifications"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
+            type="button"
+          >
+            <Bell size={20} />
+          </button>
+          <button
+            aria-label={`Profile for ${name}`}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 text-brand-700"
+            type="button"
+            title={name}
+          >
+            <UserRound size={20} />
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
