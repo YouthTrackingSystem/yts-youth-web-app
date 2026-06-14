@@ -1,19 +1,38 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { OfflineNotice } from "@/components/feedback/OfflineNotice";
 import { Button } from "@/components/ui/Button";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { ApiError } from "@/lib/api/errors";
+import type { YouthSessionState } from "@/types/auth";
 import { authService } from "./service";
 
-type LoginFormState = "idle" | "submitting" | "pending-api";
+function sessionDestination(session: YouthSessionState) {
+  return session.status === "authenticated"
+    ? "/dashboard"
+    : session.status === "blocked"
+      ? "/registration-application"
+      : "/login";
+}
 
 export function LoginForm() {
-  const [identifier, setIdentifier] = useState("");
+  const router = useRouter();
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
-  const [state, setState] = useState<LoginFormState>("idle");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isOnline = useOnlineStatus();
+
+  useEffect(() => {
+    authService.getSession().then((session) => {
+      if (session.status !== "unauthenticated") {
+        router.replace(sessionDestination(session));
+      }
+    }).catch(() => undefined);
+  }, [router]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -22,43 +41,49 @@ export function LoginForm() {
       return;
     }
 
-    setState("submitting");
+    setIsSubmitting(true);
+    setError(null);
 
     try {
-      await authService.login({ identifier, password });
-    } catch {
-      setState("pending-api");
+      const result = await authService.login({ phoneNumber, password });
+      router.replace(sessionDestination(result.session));
+      router.refresh();
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : caughtError instanceof Error
+            ? caughtError.message
+            : "Unable to sign in. Please try again."
+      );
+      setIsSubmitting(false);
     }
   }
-
-  const isSubmitting = state === "submitting";
 
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <OfflineNotice mode="inline" />
 
-      {state === "pending-api" ? (
-        <div className="flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+      {error ? (
+        <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           <AlertCircle className="mt-0.5 shrink-0 text-brand-700" size={18} />
-          <p>
-            Login UI is ready. The Laravel youth auth API endpoint is still
-            pending for Phase 2B.
-          </p>
+          <p>{error}</p>
         </div>
       ) : null}
 
       <label className="block">
         <span className="mb-2 block text-sm font-medium text-slate-700">
-          Phone number or email
+          Phone number
         </span>
         <input
           autoComplete="username"
           className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
-          onChange={(event) => setIdentifier(event.target.value)}
-          placeholder="Enter your YTS login"
+          inputMode="tel"
+          onChange={(event) => setPhoneNumber(event.target.value)}
+          placeholder="Enter your phone number"
           required
-          type="text"
-          value={identifier}
+          type="tel"
+          value={phoneNumber}
         />
       </label>
 

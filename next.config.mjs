@@ -11,7 +11,21 @@ const withPWA = withPWAInit({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true
+  reactStrictMode: true,
+  async rewrites() {
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+    if (!apiBaseUrl) {
+      return [];
+    }
+
+    return [
+      {
+        source: "/api/youth-proxy/:path*",
+        destination: `${apiBaseUrl.replace(/\/$/, "")}/:path*`
+      }
+    ];
+  }
 };
 
 export default withPWA(nextConfig);

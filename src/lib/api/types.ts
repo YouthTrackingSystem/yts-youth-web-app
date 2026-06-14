@@ -5,6 +5,7 @@ export type ApiClientOptions = {
 
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
+  skipAuth?: boolean;
 };
 
 export type ApiClient = {

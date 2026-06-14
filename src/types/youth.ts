@@ -17,10 +17,22 @@ export type YouthProfileSummary = {
 export type OpportunitySummary = {
   id: string;
   title: string;
-  typeLabel?: string;
-  stakeholderName?: string;
+  description?: string;
+  typeLabel: string;
+  stakeholderName: string;
+  sectorName: string;
+  location: string;
+  stipendAmount?: number;
+  opensAt?: string;
   closesAt?: string;
+  startsAt?: string;
+  endsAt?: string;
+};
+
+export type OpportunityApplicationState = {
   hasApplied: boolean;
+  applicationId?: string;
+  status?: string;
 };
 
 export type YouthApplicationSummary = {

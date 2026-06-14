@@ -1,5 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { Bell, UserRound } from "lucide-react";
+import { Bell, LogOut, UserRound } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/features/auth/service";
 import type { YouthSessionState } from "@/types/auth";
 
 type AppHeaderProps = {
@@ -7,7 +12,16 @@ type AppHeaderProps = {
 };
 
 export function AppHeader({ session }: AppHeaderProps) {
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const name = session.status === "authenticated" ? session.user.name : "Youth";
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+    await authService.logout().catch(() => undefined);
+    router.replace("/login");
+    router.refresh();
+  }
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -31,6 +45,15 @@ export function AppHeader({ session }: AppHeaderProps) {
             title={name}
           >
             <UserRound size={20} />
+          </button>
+          <button
+            aria-label="Sign out"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-60"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            type="button"
+          >
+            <LogOut size={20} />
           </button>
         </div>
       </div>

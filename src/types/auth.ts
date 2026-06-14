@@ -37,7 +37,12 @@ export type YouthSessionState =
       user: YouthSessionUser;
       capabilities: YouthCapabilities;
       registrationStatus: Exclude<YouthRegistrationStatus, "APPROVED">;
-      reason: "not_whitelisted" | "registration_incomplete" | "awaiting_approval";
+      rejectedReason?: string;
+      reason:
+        | "not_whitelisted"
+        | "registration_incomplete"
+        | "awaiting_approval"
+        | "registration_rejected";
     }
   | {
       status: "authenticated";
@@ -48,7 +53,7 @@ export type YouthSessionState =
     };
 
 export type LoginCredentials = {
-  identifier: string;
+  phoneNumber: string;
   password: string;
 };
 
