@@ -37,9 +37,21 @@ export type OpportunityApplicationState = {
 
 export type YouthApplicationSummary = {
   id: string;
+  opportunityId: string;
   opportunityTitle: string;
+  stakeholderName: string;
   statusCode: string;
   statusLabel: string;
+  coverNote?: string;
+  portfolioUrl?: string;
+  notes?: string;
   appliedAt?: string;
+  decisionAt?: string;
   isDraft: boolean;
+};
+
+export type YouthApplicationDraftInput = {
+  coverNote: string;
+  portfolioUrl: string;
+  notes: string;
 };
