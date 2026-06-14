@@ -10,8 +10,40 @@ export type YouthProfileSummary = {
   name: string;
   email?: string;
   phoneNumber?: string;
-  status: string;
+  birthDate?: string;
+  gender?: string;
+  maritalStatus?: string;
+  emergencyContact?: string;
+  hasDisability?: string;
+  journeyStatus?: string;
+  registrationStatus: string;
   profileCompletion: number;
+  residence: {
+    physicalAddress?: string;
+    latitude?: string;
+    longitude?: string;
+    location: string;
+  } | null;
+  occupations: string[];
+  educations: string[];
+  skills: string[];
+  languages: string[];
+  pathways: string[];
+  wishes: string[];
+  documents: string[];
+};
+
+export type YouthProfilePersonalInput = {
+  email: string;
+  maritalStatus: string;
+  emergencyContact: string;
+  hasDisability: string;
+};
+
+export type YouthProfileAddressInput = {
+  physicalAddress: string;
+  latitude: string;
+  longitude: string;
 };
 
 export type OpportunitySummary = {
