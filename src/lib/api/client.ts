@@ -29,8 +29,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
         headers.set("Content-Type", "application/json");
       }
 
-      const requestBaseUrl =
-        typeof window === "undefined" ? baseUrl : "/api/youth-proxy";
+      const requestBaseUrl = baseUrl;
       const response = await fetch(
         `${requestBaseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`,
         {
