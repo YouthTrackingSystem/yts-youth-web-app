@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, ClipboardList, Loader2, RefreshCw, Sparkles, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { InstallBanner } from "@/features/pwa/InstallBanner";
 import { ApiError } from "@/lib/api/errors";
 import type { DashboardSummary } from "@/types/youth";
 import { dashboardService } from "./service";
@@ -29,34 +30,7 @@ export function DashboardView() {
     loadDashboard();
   }, [loadDashboard]);
 
-  if (!summary && !error) {
-    return (
-      <div className="flex items-center justify-center py-16 text-sm text-slate-600">
-        <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading dashboard
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
-        <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Dashboard unavailable</h1>
-        <p className="mt-2 text-sm text-slate-600">{error}</p>
-        <Button className="mt-5" onClick={loadDashboard} variant="secondary">
-          <RefreshCw className="mr-2" size={18} />
-          Try again
-        </Button>
-      </section>
-    );
-  }
-
-  if (!summary) {
-    return null;
-  }
-
-  const cards = [
+  const cards = summary ? [
     {
       title: "Profile",
       value: `${summary.profileCompletion}%`,
@@ -75,10 +49,33 @@ export function DashboardView() {
       description: `${summary.draftApplications} draft applications`,
       icon: ClipboardList
     }
-  ];
+  ] : [];
 
   return (
     <div className="space-y-6">
+      <InstallBanner />
+
+      {!summary && !error ? (
+        <div className="flex items-center justify-center py-16 text-sm text-slate-600">
+          <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
+          Loading dashboard
+        </div>
+      ) : null}
+
+      {error ? (
+        <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
+          <AlertCircle className="mx-auto text-red-600" size={28} />
+          <h1 className="mt-3 text-lg font-semibold text-ink">Dashboard unavailable</h1>
+          <p className="mt-2 text-sm text-slate-600">{error}</p>
+          <Button className="mt-5" onClick={loadDashboard} variant="secondary">
+            <RefreshCw className="mr-2" size={18} />
+            Try again
+          </Button>
+        </section>
+      ) : null}
+
+      {summary ? (
+        <>
       <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
         <p className="text-sm font-medium text-brand-100">Welcome back</p>
         <h1 className="mt-2 text-2xl font-semibold">Youth dashboard</h1>
@@ -108,6 +105,8 @@ export function DashboardView() {
           );
         })}
       </section>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { apiClient } from "@/lib/api/client";
 import { apiEndpoints } from "@/lib/api/endpoints";
-import { ApiEndpointPendingError } from "@/lib/api/errors";
+import { env } from "@/lib/env";
 import type {
   YouthProfileAddressInput,
   YouthProfilePersonalInput,
@@ -11,7 +11,7 @@ export type ProfileService = {
   getProfile: () => Promise<YouthProfileSummary | null>;
   updatePersonal: (payload: YouthProfilePersonalInput) => Promise<YouthProfileSummary | null>;
   updateAddress: (payload: YouthProfileAddressInput) => Promise<YouthProfileSummary | null>;
-  uploadAvatar: (payload: FormData) => Promise<YouthProfileSummary>;
+  uploadAvatar: (payload: FormData) => Promise<YouthProfileSummary | null>;
 };
 
 type ApiRecord = Record<string, unknown>;
@@ -40,6 +40,15 @@ function readNumber(record: ApiRecord, key: string) {
   const value = record[key];
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : 0;
+}
+
+function resolveAvatarUrl(value?: string) {
+  if (!value || /^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  const baseUrl = env.NEXT_PUBLIC_API_BASE_URL;
+  return baseUrl ? new URL(value, `${baseUrl.replace(/\/$/, "")}/`).toString() : value;
 }
 
 function normalizeList(value: unknown, keys: string[]) {
@@ -123,6 +132,7 @@ function normalizeProfile(response: unknown): YouthProfileSummary | null {
   return {
     id: readString(profile, "id") ?? "",
     name: readString(profile, "name") ?? readString(user, "name") ?? "Youth",
+    avatarUrl: resolveAvatarUrl(readString(profile, "avatar_url")),
     email: readString(profile, "email") ?? readString(user, "email"),
     phoneNumber: readString(profile, "primary_phone") ?? readString(user, "phone_number"),
     birthDate: readString(profile, "birth_date"),
@@ -189,9 +199,12 @@ export const profileService: ProfileService = {
     return this.getProfile();
   },
 
-  async uploadAvatar(_payload) {
-    // TODO(Phase 2B backend): POST multipart form data to
-    // apiEndpoints.youth.profileAvatar.
-    throw new ApiEndpointPendingError(apiEndpoints.youth.profileAvatar);
+  async uploadAvatar(payload) {
+    await apiClient.request<void>(apiEndpoints.youth.profileAvatar, {
+      method: "POST",
+      body: payload
+    });
+
+    return this.getProfile();
   }
 };

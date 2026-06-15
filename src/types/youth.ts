@@ -8,6 +8,7 @@ export type DashboardSummary = {
 export type YouthProfileSummary = {
   id: string;
   name: string;
+  avatarUrl?: string;
   email?: string;
   phoneNumber?: string;
   birthDate?: string;

@@ -1,10 +1,11 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
   BookOpen,
   BriefcaseBusiness,
+  Camera,
   CheckCircle2,
   FileText,
   Languages,
@@ -15,6 +16,8 @@ import {
   Save,
   Sparkles,
   Target,
+  Upload,
+  X,
   UserRound
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -41,6 +44,15 @@ const emptyAddress: YouthProfileAddressInput = {
 
 function displayValue(value?: string) {
   return value || "Not provided";
+}
+
+function profileInitials(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "Y";
 }
 
 function formatStatus(value?: string) {
@@ -90,7 +102,9 @@ export function ProfileView() {
   const [address, setAddress] = useState(emptyAddress);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [action, setAction] = useState<"personal" | "address" | null>(null);
+  const [action, setAction] = useState<"personal" | "address" | "avatar" | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
   const syncProfile = useCallback((nextProfile: YouthProfileSummary | null) => {
     setProfile(nextProfile);
@@ -130,6 +144,61 @@ export function ProfileView() {
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    };
+  }, [avatarPreviewUrl]);
+
+  function clearAvatarSelection() {
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(null);
+    setAvatarPreviewUrl(null);
+  }
+
+  function selectAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file.");
+      return;
+    }
+
+    if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+    setAvatarFile(file);
+    setAvatarPreviewUrl(URL.createObjectURL(file));
+    setError(null);
+    setNotice(null);
+  }
+
+  async function uploadAvatar() {
+    if (!avatarFile) return;
+
+    setAction("avatar");
+    setError(null);
+    setNotice(null);
+
+    const formData = new FormData();
+    formData.append("avatar", avatarFile);
+
+    try {
+      syncProfile(await profileService.uploadAvatar(formData));
+      clearAvatarSelection();
+      setNotice("Profile photo updated successfully.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to upload the profile photo. Please try again."
+      );
+    } finally {
+      setAction(null);
+    }
+  }
 
   async function savePersonal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -223,18 +292,47 @@ export function ProfileView() {
     <div className="space-y-5">
       <section className="rounded-lg bg-brand-700 p-5 text-white shadow-soft sm:p-6">
         <div className="grid gap-5 sm:grid-cols-[1fr_auto] sm:items-start">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-brand-100">My profile</p>
-            <h1 className="mt-1 text-2xl font-semibold">{profile.name}</h1>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span
-                className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${journeyBadgeClass(profile.journeyStatus)}`}
-              >
-                Journey: {formatStatus(profile.journeyStatus)}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-                Registration: {formatStatus(profile.registrationStatus)}
-              </span>
+          <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="shrink-0">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border-4 border-white/25 bg-white/15 text-2xl font-semibold text-white">
+                {avatarPreviewUrl || profile.avatarUrl ? (
+                  // A plain image supports backend-provided absolute or relative avatar URLs.
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={`${profile.name} profile`}
+                    className="h-full w-full object-cover"
+                    src={avatarPreviewUrl ?? profile.avatarUrl}
+                  />
+                ) : (
+                  profileInitials(profile.name)
+                )}
+              </div>
+              <label className="mt-2 inline-flex min-h-9 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20">
+                <Camera className="mr-1.5" size={15} />
+                {profile.avatarUrl ? "Change photo" : "Upload photo"}
+                <input
+                  accept="image/*"
+                  className="sr-only"
+                  disabled={action !== null}
+                  onChange={selectAvatar}
+                  type="file"
+                />
+              </label>
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-brand-100">My profile</p>
+              <h1 className="mt-1 text-2xl font-semibold">{profile.name}</h1>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${journeyBadgeClass(profile.journeyStatus)}`}
+                >
+                  Journey: {formatStatus(profile.journeyStatus)}
+                </span>
+                <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+                  Registration: {formatStatus(profile.registrationStatus)}
+                </span>
+              </div>
             </div>
           </div>
           <div className="w-fit rounded-lg bg-white/10 px-4 py-3 text-center sm:justify-self-end">
@@ -242,6 +340,37 @@ export function ProfileView() {
             <p className="text-xs text-brand-100">Profile completion</p>
           </div>
         </div>
+
+        {avatarFile ? (
+          <div className="mt-4 flex flex-col gap-2 rounded-md border border-white/20 bg-white/10 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="truncate text-sm text-brand-50">Selected: {avatarFile.name}</p>
+            <div className="flex gap-2">
+              <button
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md border border-white/30 px-3 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-60 sm:flex-none"
+                disabled={action !== null}
+                onClick={clearAvatarSelection}
+                type="button"
+              >
+                <X className="mr-1.5" size={15} />
+                Cancel
+              </button>
+              <button
+                className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-white px-3 text-xs font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-60 sm:flex-none"
+                disabled={action !== null}
+                onClick={uploadAvatar}
+                type="button"
+              >
+                {action === "avatar" ? (
+                  <Loader2 className="mr-1.5 animate-spin" size={15} />
+                ) : (
+                  <Upload className="mr-1.5" size={15} />
+                )}
+                Upload photo
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/20">
           <div
             className="h-full rounded-full bg-white"
