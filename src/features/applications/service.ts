@@ -1,7 +1,10 @@
 import { apiClient } from "@/lib/api/client";
 import { apiEndpoints } from "@/lib/api/endpoints";
-import { ApiEndpointPendingError } from "@/lib/api/errors";
+import { ApiError } from "@/lib/api/errors";
+import { getAccessToken } from "@/lib/auth/token";
+import { env } from "@/lib/env";
 import type {
+  YouthApplicationCreateDraftInput,
   YouthApplicationDraftInput,
   YouthApplicationSummary
 } from "@/types/youth";
@@ -9,13 +12,14 @@ import type {
 export type ApplicationsService = {
   list: () => Promise<YouthApplicationSummary[]>;
   getById: (id: string) => Promise<YouthApplicationSummary>;
-  create: (payload: unknown) => Promise<YouthApplicationSummary>;
+  createDraft: (payload: YouthApplicationCreateDraftInput) => Promise<YouthApplicationSummary>;
   updateDraft: (
     id: string,
     payload: YouthApplicationDraftInput
   ) => Promise<YouthApplicationSummary>;
   submitDraft: (id: string) => Promise<YouthApplicationSummary>;
   uploadCv: (id: string, payload: FormData) => Promise<YouthApplicationSummary>;
+  downloadCv: (id: string) => Promise<Blob>;
 };
 
 type ApiRecord = Record<string, unknown>;
@@ -38,6 +42,24 @@ function readString(record: ApiRecord, key: string) {
   return undefined;
 }
 
+function readBoolean(record: ApiRecord, key: string) {
+  const value = record[key];
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value === 1;
+  }
+
+  if (typeof value === "string") {
+    return ["1", "true", "yes"].includes(value.trim().toLowerCase());
+  }
+
+  return false;
+}
+
 function normalizeApplication(value: unknown): YouthApplicationSummary {
   const application = asRecord(value);
   const opportunity = asRecord(application.opportunity);
@@ -55,6 +77,7 @@ function normalizeApplication(value: unknown): YouthApplicationSummary {
     coverNote: readString(application, "cover_note"),
     portfolioUrl: readString(application, "portfolio_url"),
     notes: readString(application, "notes"),
+    hasCv: readBoolean(application, "has_cv") || readBoolean(application, "hasCv"),
     appliedAt: readString(application, "applied_at"),
     decisionAt: readString(application, "decision_at"),
     isDraft: statusCode.toLowerCase() === "draft"
@@ -71,6 +94,16 @@ function draftPayload(payload: YouthApplicationDraftInput) {
     cover_note: payload.coverNote,
     portfolio_url: payload.portfolioUrl || null,
     notes: payload.notes || null
+  };
+}
+
+function createDraftPayload(payload: YouthApplicationCreateDraftInput) {
+  return {
+    opportunity_id: payload.opportunityId,
+    cover_note: payload.coverNote,
+    portfolio_url: payload.portfolioUrl || null,
+    notes: payload.notes || null,
+    save_as: "draft"
   };
 }
 
@@ -95,10 +128,10 @@ export const applicationsService: ApplicationsService = {
     return unwrapApplication(response);
   },
 
-  async create(payload) {
+  async createDraft(payload) {
     const response = await apiClient.request<unknown>(
       apiEndpoints.youth.applications,
-      { method: "POST", body: payload }
+      { method: "POST", body: createDraftPayload(payload) }
     );
 
     return unwrapApplication(response);
@@ -122,9 +155,41 @@ export const applicationsService: ApplicationsService = {
     return unwrapApplication(response);
   },
 
-  async uploadCv(id, _payload) {
-    // TODO(Phase 2B backend): POST multipart form data to
-    // apiEndpoints.youth.applicationCv(id), scoped to the current youth.
-    throw new ApiEndpointPendingError(apiEndpoints.youth.applicationCv(id));
+  async uploadCv(id, payload) {
+    await apiClient.request<unknown>(apiEndpoints.youth.applicationCv(id), {
+      method: "POST",
+      body: payload
+    });
+
+    return this.getById(id);
+  },
+
+  async downloadCv(id) {
+    if (!env.NEXT_PUBLIC_API_BASE_URL) {
+      throw new Error("NEXT_PUBLIC_API_BASE_URL is not configured.");
+    }
+
+    const headers = new Headers({ Accept: "*/*" });
+    const token = getAccessToken();
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const response = await fetch(
+      `${env.NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, "")}/${apiEndpoints.youth
+        .applicationCv(id)
+        .replace(/^\//, "")}`,
+      { headers }
+    );
+
+    if (!response.ok) {
+      throw new ApiError(
+        `Unable to download CV. API request failed with status ${response.status}.`,
+        response.status
+      );
+    }
+
+    return response.blob();
   }
 };

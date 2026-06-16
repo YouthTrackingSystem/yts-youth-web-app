@@ -37,3 +37,15 @@ export function formatStatus(value?: string) {
     .replace(/[_-]+/g, " ")
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
+
+export function opportunityStatusBadgeClass(statusCode: string) {
+  switch (statusCode.toLowerCase()) {
+    case "published":
+      return "bg-green-50 text-green-800";
+    case "closed":
+    case "expired":
+      return "bg-slate-100 text-slate-700";
+    default:
+      return "bg-amber-50 text-amber-800";
+  }
+}

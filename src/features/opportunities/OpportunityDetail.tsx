@@ -2,18 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowLeft,
   Banknote,
   CalendarDays,
   CheckCircle2,
+  FilePenLine,
   Loader2,
   MapPin,
-  RefreshCw
+  RefreshCw,
+  Send
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
+import { applicationsService } from "@/features/applications/service";
 import type {
   OpportunityApplicationState,
   OpportunitySummary
@@ -21,7 +25,8 @@ import type {
 import {
   formatOpportunityDate,
   formatStatus,
-  formatStipend
+  formatStipend,
+  opportunityStatusBadgeClass
 } from "./formatters";
 import { opportunitiesService } from "./service";
 
@@ -30,13 +35,17 @@ type OpportunityDetailProps = {
 };
 
 export function OpportunityDetail({ id }: OpportunityDetailProps) {
+  const router = useRouter();
   const [opportunity, setOpportunity] = useState<OpportunitySummary | null>(null);
   const [applicationState, setApplicationState] =
     useState<OpportunityApplicationState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [isStartingApplication, setIsStartingApplication] = useState(false);
 
   const loadOpportunity = useCallback(async () => {
     setError(null);
+    setNotice(null);
 
     try {
       const [nextOpportunity, nextApplicationState] = await Promise.all([
@@ -53,6 +62,54 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
       );
     }
   }, [id]);
+
+  function isApplicationWindowOpen(nextOpportunity: OpportunitySummary) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const opensAt = nextOpportunity.opensAt
+      ? new Date(`${nextOpportunity.opensAt}T00:00:00`)
+      : null;
+    const closesAt = nextOpportunity.closesAt
+      ? new Date(`${nextOpportunity.closesAt}T23:59:59`)
+      : null;
+
+    return (
+      nextOpportunity.statusCode.toLowerCase() === "published" &&
+      (!opensAt || today >= opensAt) &&
+      (!closesAt || today <= closesAt)
+    );
+  }
+
+  async function startApplication() {
+    if (!opportunity || !applicationState || applicationState.hasApplied) {
+      return;
+    }
+
+    setIsStartingApplication(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const application = await applicationsService.createDraft({
+        opportunityId: opportunity.id,
+        coverNote: "",
+        portfolioUrl: "",
+        notes: ""
+      });
+      setNotice("Draft application created. Opening the editor...");
+      router.push(`/applications/${application.id}`);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to start this application. Please try again."
+      );
+      await loadOpportunity().catch(() => undefined);
+    } finally {
+      setIsStartingApplication(false);
+    }
+  }
 
   useEffect(() => {
     loadOpportunity();
@@ -85,6 +142,8 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
     return null;
   }
 
+  const isOpenForApplications = isApplicationWindowOpen(opportunity);
+
   return (
     <div className="space-y-5">
       <Link
@@ -102,6 +161,11 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
             {opportunity.sectorName}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1 ${opportunityStatusBadgeClass(opportunity.statusCode)}`}
+          >
+            {opportunity.statusLabel}
           </span>
         </div>
 
@@ -156,28 +220,72 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
         </dl>
       </section>
 
+      {notice ? (
+        <div className="flex items-start gap-2 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          <CheckCircle2 className="mt-0.5 shrink-0" size={18} />
+          <p>{notice}</p>
+        </div>
+      ) : null}
+
+      {error ? (
+        <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <AlertCircle className="mt-0.5 shrink-0" size={18} />
+          <p>{error}</p>
+        </div>
+      ) : null}
+
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         {applicationState.hasApplied ? (
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 shrink-0 text-brand-700" size={22} />
             <div>
-              <h2 className="font-semibold text-ink">Application submitted</h2>
+              <h2 className="font-semibold text-ink">
+                {applicationState.canEdit ? "Draft application started" : "Application submitted"}
+              </h2>
               <p className="mt-1 text-sm text-slate-600">
                 Status: {formatStatus(applicationState.status)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 Application ID: {applicationState.applicationId ?? "Not available"}
               </p>
+              {applicationState.applicationId ? (
+                <Link
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 sm:w-auto"
+                  href={`/applications/${applicationState.applicationId}`}
+                >
+                  <FilePenLine className="mr-2" size={18} />
+                  {applicationState.canEdit ? "Continue draft" : "View application"}
+                </Link>
+              ) : null}
             </div>
+          </div>
+        ) : !isOpenForApplications ? (
+          <div>
+            <h2 className="font-semibold text-ink">Applications unavailable</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              This opportunity is not currently open for applications. Check the opening and closing dates above.
+            </p>
+            <Button className="mt-4 w-full sm:w-auto" disabled variant="secondary">
+              Apply unavailable
+            </Button>
           </div>
         ) : (
           <div>
             <h2 className="font-semibold text-ink">Ready to apply?</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Application submission will be available in a later phase.
+              Start a draft application now. You can edit and submit it from the application page.
             </p>
-            <Button className="mt-4 w-full sm:w-auto" disabled>
-              Apply
+            <Button
+              className="mt-4 w-full sm:w-auto"
+              disabled={isStartingApplication}
+              onClick={startApplication}
+            >
+              {isStartingApplication ? (
+                <Loader2 className="mr-2 animate-spin" size={18} />
+              ) : (
+                <Send className="mr-2" size={18} />
+              )}
+              Start application
             </Button>
           </div>
         )}

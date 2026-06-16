@@ -43,6 +43,7 @@ function formatLocation(value: unknown) {
 function normalizeOpportunity(value: unknown): OpportunitySummary {
   const opportunity = asRecord(value);
   const type = asRecord(opportunity.type);
+  const status = asRecord(opportunity.status);
   const stakeholder = asRecord(opportunity.stakeholder);
   const sector = asRecord(opportunity.sector_category);
   const stipend = readString(opportunity, "stipend_amount");
@@ -52,6 +53,8 @@ function normalizeOpportunity(value: unknown): OpportunitySummary {
     id: readString(opportunity, "id") ?? "",
     title: readString(opportunity, "title") ?? "Untitled opportunity",
     description: readString(opportunity, "description"),
+    statusCode: readString(status, "code") ?? "unknown",
+    statusLabel: readString(status, "label") ?? "Unknown",
     typeLabel: readString(type, "label") ?? "Not specified",
     stakeholderName: readString(stakeholder, "name") ?? "Not specified",
     sectorName: readString(sector, "name") ?? "Not specified",
@@ -99,7 +102,8 @@ export const opportunitiesService: OpportunitiesService = {
     return {
       hasApplied: Boolean(payload.has_application ?? payload.hasApplied),
       applicationId: readString(payload, "application_id"),
-      status: readString(payload, "status")
+      status: readString(payload, "status"),
+      canEdit: Boolean(payload.can_edit ?? payload.canEdit)
     };
   }
 };

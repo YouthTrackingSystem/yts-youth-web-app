@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   FileText,
   Languages,
+  LocateFixed,
   Loader2,
   MapPin,
   RefreshCw,
@@ -22,25 +23,85 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
+import { registrationService } from "@/features/auth/registrationService";
+import type {
+  LocationLevel,
+  RegistrationApplication,
+  SelectOption
+} from "@/types/registration";
 import type {
   YouthProfileAddressInput,
+  YouthProfileOccupationInput,
   YouthProfilePersonalInput,
+  YouthProfileWishInput,
+  YouthProfileWishesInput,
   YouthProfileSummary
 } from "@/types/youth";
 import { profileService } from "./service";
 
 const emptyPersonal: YouthProfilePersonalInput = {
+  firstName: "",
+  middleName: "",
+  surname: "",
+  birthDate: "",
+  gender: "",
+  religionId: null,
   email: "",
   maritalStatus: "",
   emergencyContact: "",
-  hasDisability: ""
+  hasDisability: "",
+  disabilityTypeId: null
 };
 
 const emptyAddress: YouthProfileAddressInput = {
+  countryId: null,
+  regionId: null,
+  districtId: null,
+  divisionId: null,
+  wardId: null,
+  streetId: null,
   physicalAddress: "",
   latitude: "",
   longitude: ""
 };
+
+const emptyOccupation: YouthProfileOccupationInput = {
+  occupationType: "",
+  sectorCategoryId: null,
+  occupationSectorId: null
+};
+
+const emptyWish: YouthProfileWishInput = {
+  interestType: "",
+  wishSectorId: null,
+  sectorCategoryId: null,
+  description: "",
+  isPriority: true
+};
+
+const emptyWishes: YouthProfileWishesInput = {
+  youthWishes: "No",
+  wishes: []
+};
+
+type LocationOptions = Record<LocationLevel, SelectOption[]>;
+
+const emptyLocationOptions: LocationOptions = {
+  country: [],
+  region: [],
+  district: [],
+  division: [],
+  ward: [],
+  street: []
+};
+
+function numberOrNull(value: string) {
+  return value === "" ? null : Number(value);
+}
+
+function addressKey(level: LocationLevel) {
+  return `${level}Id` as const;
+}
 
 function displayValue(value?: string) {
   return value || "Not provided";
@@ -97,12 +158,19 @@ function ProfileList({ items, emptyText }: { items: string[]; emptyText: string 
 
 export function ProfileView() {
   const [profile, setProfile] = useState<YouthProfileSummary | null>(null);
+  const [registration, setRegistration] = useState<RegistrationApplication | null>(null);
+  const [locationOptions, setLocationOptions] = useState<LocationOptions>(emptyLocationOptions);
   const [loaded, setLoaded] = useState(false);
   const [personal, setPersonal] = useState(emptyPersonal);
   const [address, setAddress] = useState(emptyAddress);
+  const [occupation, setOccupation] = useState(emptyOccupation);
+  const [wishesEditor, setWishesEditor] = useState(emptyWishes);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [action, setAction] = useState<"personal" | "address" | "avatar" | null>(null);
+  const [action, setAction] = useState<
+    "personal" | "address" | "avatar" | "occupation" | "wishes" | null
+  >(null);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
 
@@ -113,16 +181,62 @@ export function ProfileView() {
     if (!nextProfile) return;
 
     setPersonal({
+      firstName: nextProfile.firstName,
+      middleName: nextProfile.middleName ?? "",
+      surname: nextProfile.surname,
+      birthDate: nextProfile.birthDate ?? "",
+      gender: nextProfile.gender ?? "",
+      religionId: nextProfile.religionId,
       email: nextProfile.email ?? "",
       maritalStatus: nextProfile.maritalStatus ?? "",
       emergencyContact: nextProfile.emergencyContact ?? "",
-      hasDisability: nextProfile.hasDisability ?? ""
+      hasDisability: nextProfile.hasDisability ?? "",
+      disabilityTypeId: nextProfile.disabilityTypeId
     });
     setAddress({
+      countryId: nextProfile.residence?.countryId ?? null,
+      regionId: nextProfile.residence?.regionId ?? null,
+      districtId: nextProfile.residence?.districtId ?? null,
+      divisionId: nextProfile.residence?.divisionId ?? null,
+      wardId: nextProfile.residence?.wardId ?? null,
+      streetId: nextProfile.residence?.streetId ?? null,
       physicalAddress: nextProfile.residence?.physicalAddress ?? "",
       latitude: nextProfile.residence?.latitude ?? "",
       longitude: nextProfile.residence?.longitude ?? ""
     });
+    setOccupation(nextProfile.occupationEditor);
+    setWishesEditor({
+      youthWishes: nextProfile.wishesEditor.youthWishes,
+      wishes:
+        nextProfile.wishesEditor.youthWishes === "Yes" && !nextProfile.wishesEditor.wishes.length
+          ? [{ ...emptyWish }]
+          : nextProfile.wishesEditor.wishes
+    });
+  }, []);
+
+  const loadLocationOptions = useCallback(async (nextAddress: YouthProfileAddressInput) => {
+    const options: LocationOptions = {
+      ...emptyLocationOptions,
+      country: await registrationService.countries()
+    };
+
+    if (nextAddress.countryId) {
+      options.region = await registrationService.regions(nextAddress.countryId);
+    }
+    if (nextAddress.regionId) {
+      options.district = await registrationService.districts(nextAddress.regionId);
+    }
+    if (nextAddress.districtId) {
+      options.division = await registrationService.divisions(nextAddress.districtId);
+    }
+    if (nextAddress.divisionId) {
+      options.ward = await registrationService.wards(nextAddress.divisionId);
+    }
+    if (nextAddress.wardId) {
+      options.street = await registrationService.streets(nextAddress.wardId);
+    }
+
+    setLocationOptions(options);
   }, []);
 
   const loadProfile = useCallback(async () => {
@@ -130,7 +244,31 @@ export function ProfileView() {
     setNotice(null);
 
     try {
-      syncProfile(await profileService.getProfile());
+      const [nextProfile, nextRegistration] = await Promise.all([
+        profileService.getProfile(),
+        registrationService.get()
+      ]);
+
+      syncProfile(nextProfile);
+      setRegistration(nextRegistration);
+      setPersonal((current) => ({
+        ...current,
+        disabilityTypeId: nextRegistration.socio_economic.disability_type_id
+      }));
+
+      if (nextProfile?.residence) {
+        await loadLocationOptions({
+          countryId: nextProfile.residence.countryId,
+          regionId: nextProfile.residence.regionId,
+          districtId: nextProfile.residence.districtId,
+          divisionId: nextProfile.residence.divisionId,
+          wardId: nextProfile.residence.wardId,
+          streetId: nextProfile.residence.streetId,
+          physicalAddress: nextProfile.residence.physicalAddress ?? "",
+          latitude: nextProfile.residence.latitude ?? "",
+          longitude: nextProfile.residence.longitude ?? ""
+        });
+      }
     } catch (caughtError) {
       setLoaded(true);
       setError(
@@ -139,7 +277,7 @@ export function ProfileView() {
           : "Unable to load your profile. Please try again."
       );
     }
-  }, [syncProfile]);
+  }, [loadLocationOptions, syncProfile]);
 
   useEffect(() => {
     loadProfile();
@@ -175,6 +313,71 @@ export function ProfileView() {
     setNotice(null);
   }
 
+  function isLocationEditable(level: LocationLevel) {
+    return Boolean(registration?.scope.editable_levels.includes(level));
+  }
+
+  async function updateLocationLevel(level: LocationLevel, value: number | null) {
+    const levels: LocationLevel[] = ["country", "region", "district", "division", "ward", "street"];
+    const start = levels.indexOf(level);
+    const nextAddress = { ...address, [addressKey(level)]: value };
+    const nextOptions = { ...locationOptions };
+
+    levels.slice(start + 1).forEach((childLevel) => {
+      Object.assign(nextAddress, { [addressKey(childLevel)]: null });
+      nextOptions[childLevel] = [];
+    });
+
+    setAddress(nextAddress);
+    setLocationOptions(nextOptions);
+
+    if (!value || level === "street") {
+      return;
+    }
+
+    const childLevel = levels[start + 1];
+    const childOptions =
+      level === "country"
+        ? await registrationService.regions(value)
+        : level === "region"
+          ? await registrationService.districts(value)
+          : level === "district"
+            ? await registrationService.divisions(value)
+            : level === "division"
+              ? await registrationService.wards(value)
+              : await registrationService.streets(value);
+
+    setLocationOptions((current) => ({
+      ...current,
+      [childLevel]: childOptions
+    }));
+  }
+
+  function detectLocation() {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not available in this browser.");
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setAddress((current) => ({
+          ...current,
+          latitude: String(position.coords.latitude),
+          longitude: String(position.coords.longitude)
+        }));
+        setIsDetectingLocation(false);
+      },
+      () => {
+        setError("Unable to detect your location. Check location permissions and try again.");
+        setIsDetectingLocation(false);
+      }
+    );
+  }
+
   async function uploadAvatar() {
     if (!avatarFile) return;
 
@@ -208,6 +411,10 @@ export function ProfileView() {
 
     try {
       syncProfile(await profileService.updatePersonal(personal));
+      setPersonal((current) => ({
+        ...current,
+        disabilityTypeId: personal.hasDisability === "Yes" ? personal.disabilityTypeId : null
+      }));
       setNotice("Personal details updated successfully.");
     } catch (caughtError) {
       setError(
@@ -234,6 +441,46 @@ export function ProfileView() {
         caughtError instanceof ApiError
           ? caughtError.message
           : "Unable to update the residence address. Please try again."
+      );
+    } finally {
+      setAction(null);
+    }
+  }
+
+  async function saveOccupation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAction("occupation");
+    setError(null);
+    setNotice(null);
+
+    try {
+      syncProfile(await profileService.updateOccupation(occupation));
+      setNotice("Occupation details updated successfully.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to update occupation details. Please try again."
+      );
+    } finally {
+      setAction(null);
+    }
+  }
+
+  async function saveWishes(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAction("wishes");
+    setError(null);
+    setNotice(null);
+
+    try {
+      syncProfile(await profileService.updateWishes(wishesEditor));
+      setNotice("Youth wishes updated successfully.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to update youth wishes. Please try again."
       );
     } finally {
       setAction(null);
@@ -287,6 +534,39 @@ export function ProfileView() {
   const missingSections = sections
     .filter(({ items }) => items.length === 0)
     .map(({ title }) => title);
+  const disabilityTypeName = registration?.options.disability_types.find(
+    (item) => item.id === personal.disabilityTypeId
+  )?.name;
+  const religions = profile.options.religions.length
+    ? profile.options.religions
+    : (registration?.options.religions ?? []).map((option) => ({
+        ...option,
+        categoryId: null
+      }));
+  const sectorCategories = profile.options.sectorCategories.length
+    ? profile.options.sectorCategories
+    : (registration?.options.sector_categories ?? []).map((option) => ({
+        ...option,
+        categoryId: null
+      }));
+  const occupationSectors = profile.options.occupationSectors.length
+    ? profile.options.occupationSectors
+    : (registration?.options.occupation_sectors ?? []).map((option) => ({
+        id: option.id,
+        name: option.name,
+        categoryId: option.category_id
+      }));
+  const occupationTypes = profile.options.occupationTypes;
+  const interestTypes = profile.options.interestTypes;
+  const occupationUsesSector =
+    occupation.occupationType !== "" && occupation.occupationType !== "Unemployed";
+  const filteredOccupationSectors = occupationSectors.filter(
+    (sector) => !occupation.sectorCategoryId || sector.categoryId === occupation.sectorCategoryId
+  );
+  const wish = wishesEditor.wishes[0] ?? emptyWish;
+  const filteredWishSectors = occupationSectors.filter(
+    (sector) => !wish.sectorCategoryId || sector.categoryId === wish.sectorCategoryId
+  );
 
   return (
     <div className="space-y-5">
@@ -413,7 +693,9 @@ export function ProfileView() {
           <div><dt className="font-medium text-slate-500">Birth date</dt><dd className="mt-1 text-ink">{displayValue(profile.birthDate)}</dd></div>
           <div><dt className="font-medium text-slate-500">Gender</dt><dd className="mt-1 text-ink">{displayValue(profile.gender)}</dd></div>
           <div><dt className="font-medium text-slate-500">Marital status</dt><dd className="mt-1 text-ink">{displayValue(profile.maritalStatus)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Disability</dt><dd className="mt-1 text-ink">{displayValue(profile.hasDisability)}</dd></div>
+          <div><dt className="font-medium text-slate-500">Disability</dt><dd className="mt-1 text-ink">{profile.hasDisability === "Yes" && disabilityTypeName ? `Yes / ${disabilityTypeName}` : displayValue(profile.hasDisability)}</dd></div>
+          <div><dt className="font-medium text-slate-500">Occupation</dt><dd className="mt-1 text-ink">{profile.occupations.length ? profile.occupations.join(", ") : "Not provided"}</dd></div>
+          <div><dt className="font-medium text-slate-500">Youth wishes</dt><dd className="mt-1 text-ink">{profile.wishes.length ? profile.wishes.join(", ") : "Not provided"}</dd></div>
         </dl>
       </section>
 
@@ -452,24 +734,346 @@ export function ProfileView() {
         ))}
       </section>
 
-      <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={savePersonal}>
-        <div><h2 className="text-lg font-semibold text-ink">Edit personal details</h2><p className="mt-1 text-sm text-slate-600">Update the permitted personal profile fields.</p></div>
-        <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Email</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, email: event.target.value }))} type="email" value={personal.email} /></label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Marital status</span><select className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, maritalStatus: event.target.value }))} required value={personal.maritalStatus}><option value="">Select status</option><option value="Single">Single</option><option value="Married">Married</option><option value="Divorced">Divorced</option><option value="Widowed">Widowed</option></select></label>
-          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Has disability</span><select className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, hasDisability: event.target.value }))} required value={personal.hasDisability}><option value="">Select</option><option value="Yes">Yes</option><option value="No">No</option></select></label>
+      <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveOccupation}>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Edit occupation</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Update your work status and sector so opportunity matching stays useful.
+          </p>
         </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Occupation type/status</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              disabled={action !== null}
+              onChange={(event) =>
+                setOccupation((current) => ({
+                  ...current,
+                  occupationType: event.target.value,
+                  sectorCategoryId: event.target.value === "Unemployed" ? null : current.sectorCategoryId,
+                  occupationSectorId: event.target.value === "Unemployed" ? null : current.occupationSectorId
+                }))
+              }
+              required
+              value={occupation.occupationType}
+            >
+              <option value="">Select occupation</option>
+              {occupationTypes.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </label>
+          {occupationUsesSector ? (
+            <>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Sector category</span>
+                <select
+                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                  disabled={action !== null}
+                  onChange={(event) =>
+                    setOccupation((current) => ({
+                      ...current,
+                      sectorCategoryId: numberOrNull(event.target.value),
+                      occupationSectorId: null
+                    }))
+                  }
+                  required
+                  value={occupation.sectorCategoryId ?? ""}
+                >
+                  <option value="">Select category</option>
+                  {sectorCategories.map((option) => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-medium text-slate-700">Occupation sector</span>
+                <select
+                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
+                  disabled={action !== null || !occupation.sectorCategoryId}
+                  onChange={(event) =>
+                    setOccupation((current) => ({
+                      ...current,
+                      occupationSectorId: numberOrNull(event.target.value)
+                    }))
+                  }
+                  required
+                  value={occupation.occupationSectorId ?? ""}
+                >
+                  <option value="">Select sector</option>
+                  {filteredOccupationSectors.map((option) => (
+                    <option key={option.id} value={option.id}>{option.name}</option>
+                  ))}
+                </select>
+              </label>
+            </>
+          ) : null}
+        </div>
+        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">
+          {action === "occupation" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}
+          Save occupation
+        </Button>
+      </form>
+
+      <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveWishes}>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Edit youth wishes</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Tell YTS what opportunities you want to pursue next.
+          </p>
+        </div>
+        <label className="block">
+          <span className="mb-2 block text-sm font-medium text-slate-700">Do you have wishes/interests?</span>
+          <select
+            className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+            disabled={action !== null}
+            onChange={(event) =>
+              setWishesEditor({
+                youthWishes: event.target.value,
+                wishes: event.target.value === "Yes" ? [wishesEditor.wishes[0] ?? { ...emptyWish }] : []
+              })
+            }
+            required
+            value={wishesEditor.youthWishes}
+          >
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </label>
+        {wishesEditor.youthWishes === "Yes" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Interest type</span>
+              <select
+                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                disabled={action !== null}
+                onChange={(event) =>
+                  setWishesEditor((current) => ({
+                    ...current,
+                    wishes: [{ ...wish, interestType: event.target.value }]
+                  }))
+                }
+                required
+                value={wish.interestType}
+              >
+                <option value="">Select interest</option>
+                {interestTypes.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Wish sector category</span>
+              <select
+                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                disabled={action !== null}
+                onChange={(event) =>
+                  setWishesEditor((current) => ({
+                    ...current,
+                    wishes: [
+                      {
+                        ...wish,
+                        sectorCategoryId: numberOrNull(event.target.value),
+                        wishSectorId: null
+                      }
+                    ]
+                  }))
+                }
+                required
+                value={wish.sectorCategoryId ?? ""}
+              >
+                <option value="">Select category</option>
+                {sectorCategories.map((option) => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Wish sector</span>
+              <select
+                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
+                disabled={action !== null || !wish.sectorCategoryId}
+                onChange={(event) =>
+                  setWishesEditor((current) => ({
+                    ...current,
+                    wishes: [{ ...wish, wishSectorId: numberOrNull(event.target.value) }]
+                  }))
+                }
+                required
+                value={wish.wishSectorId ?? ""}
+              >
+                <option value="">Select sector</option>
+                {filteredWishSectors.map((option) => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block sm:col-span-2">
+              <span className="mb-2 block text-sm font-medium text-slate-700">Wish description</span>
+              <textarea
+                className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+                disabled={action !== null}
+                onChange={(event) =>
+                  setWishesEditor((current) => ({
+                    ...current,
+                    wishes: [{ ...wish, description: event.target.value }]
+                  }))
+                }
+                placeholder="Example: I am interested in organic farming or greenhouse management."
+                value={wish.description}
+              />
+            </label>
+          </div>
+        ) : null}
+        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">
+          {action === "wishes" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}
+          Save youth wishes
+        </Button>
+      </form>
+
+      <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={savePersonal}>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Edit personal details</h2>
+          <p className="mt-1 text-sm text-slate-600">Update the permitted personal profile fields.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Primary phone</span>
+            <input
+              className="h-11 w-full rounded-md border border-slate-300 bg-slate-100 px-3 text-sm text-slate-700 outline-none"
+              readOnly
+              type="tel"
+              value={profile.phoneNumber ?? ""}
+            />
+            <span className="mt-1 block text-xs text-slate-500">
+              Phone number is used for login and cannot be changed here.
+            </span>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Email</span>
+            <input
+              className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, email: event.target.value }))}
+              type="email"
+              value={personal.email}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Gender</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, gender: event.target.value }))}
+              required
+              value={personal.gender}
+            >
+              <option value="">Select gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Religion</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, religionId: numberOrNull(event.target.value) }))}
+              required
+              value={personal.religionId ?? ""}
+            >
+              <option value="">Select religion</option>
+              {religions.map((option) => (
+                <option key={option.id} value={option.id}>{option.name}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Marital status</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, maritalStatus: event.target.value }))}
+              required
+              value={personal.maritalStatus}
+            >
+              <option value="">Select status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Widow/Widower">Widow/Widower</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Has disability</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, hasDisability: event.target.value, disabilityTypeId: event.target.value === "Yes" ? current.disabilityTypeId : null }))}
+              required
+              value={personal.hasDisability}
+            >
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+        </div>
+        {personal.hasDisability === "Yes" ? (
+          <label className="block">
+            <span className="mb-2 block text-sm font-medium text-slate-700">Disability type</span>
+            <select
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
+              onChange={(event) => setPersonal((current) => ({ ...current, disabilityTypeId: numberOrNull(event.target.value) }))}
+              required
+              value={personal.disabilityTypeId ?? ""}
+            >
+              <option value="">Select disability type</option>
+              {registration?.options.disability_types.map((option) => (
+                <option key={option.id} value={option.id}>{option.name}</option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Emergency contact</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, emergencyContact: event.target.value }))} required type="tel" value={personal.emergencyContact} /></label>
         <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "personal" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}Save personal details</Button>
       </form>
 
       <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveAddress}>
-        <div><h2 className="text-lg font-semibold text-ink">Edit residence address</h2><p className="mt-1 text-sm text-slate-600">Location selection remains unchanged in this phase.</p></div>
+        <div>
+          <h2 className="text-lg font-semibold text-ink">Edit residence address</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Update your residence within your assigned {registration?.scope.assigned_level ?? "location"} scope.
+          </p>
+        </div>
+        <div className="rounded-md border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
+          You can change: {registration?.scope.editable_levels.join(", ") || "assigned location only"}.
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(["country", "region", "district", "division", "ward", "street"] as LocationLevel[]).map((level) => (
+            <label className="block" key={level}>
+              <span className="mb-2 block text-sm font-medium capitalize text-slate-700">{level}</span>
+              <select
+                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
+                disabled={action !== null || !isLocationEditable(level)}
+                onChange={(event) => void updateLocationLevel(level, numberOrNull(event.target.value))}
+                required
+                value={address[addressKey(level)] ?? ""}
+              >
+                <option value="">Select {level}</option>
+                {locationOptions[level].map((option) => (
+                  <option key={option.id} value={option.id}>{option.name}</option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
         <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Physical address</span><textarea className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setAddress((current) => ({ ...current, physicalAddress: event.target.value }))} required value={address.physicalAddress} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Latitude</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, latitude: event.target.value }))} placeholder="-6.000000" type="number" step="any" value={address.latitude} /></label>
           <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Longitude</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, longitude: event.target.value }))} placeholder="39.000000" type="number" step="any" value={address.longitude} /></label>
         </div>
+        <Button disabled={action !== null || isDetectingLocation} onClick={detectLocation} type="button" variant="secondary">
+          {isDetectingLocation ? <Loader2 className="mr-2 animate-spin" size={18} /> : <LocateFixed className="mr-2" size={18} />}
+          Use current GPS location
+        </Button>
         <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "address" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}Save address</Button>
       </form>
     </div>

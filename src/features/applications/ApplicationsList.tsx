@@ -13,7 +13,10 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
 import type { YouthApplicationSummary } from "@/types/youth";
-import { formatApplicationDate } from "./formatters";
+import {
+  applicationStatusBadgeClass,
+  formatApplicationDate
+} from "./formatters";
 import { applicationsService } from "./service";
 
 export function ApplicationsList() {
@@ -99,11 +102,7 @@ export function ApplicationsList() {
                 </p>
               </div>
               <span
-                className={
-                  application.isDraft
-                    ? "rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
-                    : "rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
-                }
+                className={`rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
               >
                 {application.statusLabel}
               </span>

@@ -1,16 +1,19 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
+  Download,
+  FileText,
   Loader2,
   RefreshCw,
   Save,
-  Send
+  Send,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
@@ -18,7 +21,10 @@ import type {
   YouthApplicationDraftInput,
   YouthApplicationSummary
 } from "@/types/youth";
-import { formatApplicationDate } from "./formatters";
+import {
+  applicationStatusBadgeClass,
+  formatApplicationDate
+} from "./formatters";
 import { applicationsService } from "./service";
 
 type ApplicationDetailProps = {
@@ -37,6 +43,8 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [action, setAction] = useState<"save" | "submit" | null>(null);
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvAction, setCvAction] = useState<"upload" | "download" | null>(null);
 
   const syncApplication = useCallback((nextApplication: YouthApplicationSummary) => {
     setApplication(nextApplication);
@@ -68,6 +76,74 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 
   function updateDraft(field: keyof YouthApplicationDraftInput, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
+  }
+
+  function selectCv(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    const isAcceptedType =
+      file.type === "application/pdf" ||
+      file.type === "application/msword" ||
+      file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+      /\.(pdf|doc|docx)$/i.test(file.name);
+
+    if (!isAcceptedType) {
+      setError("Please select a PDF, DOC, or DOCX file.");
+      return;
+    }
+
+    setCvFile(file);
+    setError(null);
+    setNotice(null);
+  }
+
+  async function uploadCv() {
+    if (!cvFile) return;
+
+    setCvAction("upload");
+    setError(null);
+    setNotice(null);
+
+    const formData = new FormData();
+    formData.append("cv_file", cvFile);
+
+    try {
+      syncApplication(await applicationsService.uploadCv(id, formData));
+      setCvFile(null);
+      setNotice("CV uploaded successfully.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to upload CV. Please try again."
+      );
+    } finally {
+      setCvAction(null);
+    }
+  }
+
+  async function downloadCv() {
+    setCvAction("download");
+    setError(null);
+    setNotice(null);
+
+    try {
+      const cvBlob = await applicationsService.downloadCv(id);
+      const url = URL.createObjectURL(cvBlob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to download CV. Please try again."
+      );
+    } finally {
+      setCvAction(null);
+    }
   }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
@@ -159,11 +235,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
             </p>
           </div>
           <span
-            className={
-              application.isDraft
-                ? "rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800"
-                : "rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
-            }
+            className={`rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
           >
             {application.statusLabel}
           </span>
@@ -204,6 +276,71 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           <p>{error}</p>
         </div>
       ) : null}
+
+      <section className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div className="flex items-start gap-3">
+          <FileText className="mt-0.5 shrink-0 text-brand-700" size={22} />
+          <div>
+            <h2 className="text-lg font-semibold text-ink">CV</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              {application.hasCv ? "CV uploaded" : "No CV uploaded"}
+            </p>
+          </div>
+        </div>
+
+        {application.hasCv ? (
+          <Button
+            className="w-full sm:w-auto"
+            disabled={cvAction !== null}
+            onClick={downloadCv}
+            variant="secondary"
+          >
+            {cvAction === "download" ? (
+              <Loader2 className="mr-2 animate-spin" size={18} />
+            ) : (
+              <Download className="mr-2" size={18} />
+            )}
+            Download/View CV
+          </Button>
+        ) : null}
+
+        {application.isDraft ? (
+          <div className="space-y-3 border-t border-slate-200 pt-4">
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-slate-700">
+                Upload CV
+              </span>
+              <input
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-700"
+                disabled={cvAction !== null}
+                onChange={selectCv}
+                type="file"
+              />
+            </label>
+
+            {cvFile ? (
+              <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
+                Selected: {cvFile.name}
+              </div>
+            ) : null}
+
+            <Button
+              className="w-full sm:w-auto"
+              disabled={!cvFile || cvAction !== null}
+              onClick={uploadCv}
+              type="button"
+            >
+              {cvAction === "upload" ? (
+                <Loader2 className="mr-2 animate-spin" size={18} />
+              ) : (
+                <Upload className="mr-2" size={18} />
+              )}
+              Upload CV
+            </Button>
+          </div>
+        ) : null}
+      </section>
 
       {application.isDraft ? (
         <form

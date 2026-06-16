@@ -1,27 +1,66 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ClipboardList, Loader2, RefreshCw, Sparkles, UserRound } from "lucide-react";
+import Link from "next/link";
+import {
+  AlertCircle,
+  ArrowRight,
+  ClipboardList,
+  Loader2,
+  MessageSquare,
+  RefreshCw,
+  Sparkles,
+  Users,
+  UserRound
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { applicationsService } from "@/features/applications/service";
+import {
+  applicationStatusBadgeClass,
+  formatApplicationDate
+} from "@/features/applications/formatters";
 import { InstallBanner } from "@/features/pwa/InstallBanner";
 import { ApiError } from "@/lib/api/errors";
-import type { DashboardSummary } from "@/types/youth";
+import type { DashboardSummary, YouthApplicationSummary } from "@/types/youth";
 import { dashboardService } from "./service";
 
 export function DashboardView() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [recentApplications, setRecentApplications] = useState<YouthApplicationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [applicationsError, setApplicationsError] = useState<string | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setError(null);
+    setApplicationsError(null);
 
     try {
-      setSummary(await dashboardService.getSummary());
+      const [nextSummary, applications] = await Promise.all([
+        dashboardService.getSummary(),
+        applicationsService.list()
+      ]);
+
+      setSummary(nextSummary);
+      setRecentApplications(applications.slice(0, 3));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
           : "Unable to load the dashboard. Please try again."
+      );
+    }
+  }, []);
+
+  const loadRecentApplications = useCallback(async () => {
+    setApplicationsError(null);
+
+    try {
+      setRecentApplications((await applicationsService.list()).slice(0, 3));
+    } catch (caughtError) {
+      setApplicationsError(
+        caughtError instanceof ApiError
+          ? caughtError.message
+          : "Unable to load recent applications."
       );
     }
   }, []);
@@ -35,21 +74,70 @@ export function DashboardView() {
       title: "Profile",
       value: `${summary.profileCompletion}%`,
       description: "Profile completion",
+      href: "/profile",
       icon: UserRound
     },
     {
       title: "Opportunities",
       value: summary.openOpportunities,
       description: "Open opportunities",
+      href: "/opportunities",
       icon: Sparkles
     },
     {
       title: "Applications",
       value: summary.applicationsTotal,
       description: `${summary.draftApplications} draft applications`,
+      href: "/applications",
       icon: ClipboardList
+    },
+    {
+      title: "Youth Groups",
+      value: "Groups",
+      description: "Connect with your assigned youth groups.",
+      href: "/groups",
+      icon: Users
+    },
+    {
+      title: "Youth Forums",
+      value: "Forums",
+      description: "Join youth discussions when forums are enabled.",
+      href: "/forums",
+      icon: MessageSquare
     }
   ] : [];
+  const quickActions = [
+    {
+      title: "Complete profile",
+      description: "Keep your information fresh for better matching.",
+      href: "/profile",
+      icon: UserRound
+    },
+    {
+      title: "Browse opportunities",
+      description: "Find open training, work, and volunteer opportunities.",
+      href: "/opportunities",
+      icon: Sparkles
+    },
+    {
+      title: "Track applications",
+      description: "Review drafts and follow submitted application status.",
+      href: "/applications",
+      icon: ClipboardList
+    },
+    {
+      title: "Youth groups",
+      description: "View group access once it is enabled for your account.",
+      href: "/groups",
+      icon: Users
+    },
+    {
+      title: "Youth forums",
+      description: "Find discussions and forum updates when access is enabled.",
+      href: "/forums",
+      icon: MessageSquare
+    }
+  ];
 
   return (
     <div className="space-y-6">
@@ -76,35 +164,153 @@ export function DashboardView() {
 
       {summary ? (
         <>
-      <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
-        <p className="text-sm font-medium text-brand-100">Welcome back</p>
-        <h1 className="mt-2 text-2xl font-semibold">Youth dashboard</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-50">
-          Track your profile, opportunities, and applications in one place.
-        </p>
-      </section>
+          <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
+            <p className="text-sm font-medium text-brand-100">Welcome back</p>
+            <h1 className="mt-2 text-2xl font-semibold">Youth dashboard</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-50">
+              Track your profile, opportunities, and applications in one place.
+            </p>
+          </section>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {cards.map((card) => {
-          const Icon = card.icon;
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            {cards.map((card) => {
+              const Icon = card.icon;
 
-          return (
-            <article
-              className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
-              key={card.title}
-            >
-              <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 text-brand-700">
-                <Icon size={20} />
+              return (
+                <Link
+                  className="block rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                  href={card.href}
+                  key={card.title}
+                >
+                  <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-md bg-brand-50 text-brand-700">
+                    <Icon size={20} />
+                  </div>
+                  <p className="text-2xl font-semibold text-ink">{card.value}</p>
+                  <h2 className="mt-1 text-base font-semibold text-ink">{card.title}</h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    {card.description}
+                  </p>
+                </Link>
+              );
+            })}
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-semibold text-ink">Recent applications</h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Fast view of your latest application status.
+                </p>
               </div>
-              <p className="text-2xl font-semibold text-ink">{card.value}</p>
-              <h2 className="mt-1 text-base font-semibold text-ink">{card.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
-                {card.description}
-              </p>
-            </article>
-          );
-        })}
-      </section>
+              <Link
+                className="hidden text-sm font-semibold text-brand-700 hover:text-brand-800 sm:inline-flex"
+                href="/applications"
+              >
+                View all
+              </Link>
+            </div>
+
+            {recentApplications === null && !applicationsError ? (
+              <div className="flex items-center justify-center py-8 text-sm text-slate-600">
+                <Loader2 className="mr-2 animate-spin text-brand-700" size={18} />
+                Loading recent applications
+              </div>
+            ) : null}
+
+            {applicationsError ? (
+              <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                <p>{applicationsError}</p>
+                <Button
+                  className="mt-3"
+                  onClick={loadRecentApplications}
+                  variant="secondary"
+                >
+                  <RefreshCw className="mr-2" size={18} />
+                  Retry
+                </Button>
+              </div>
+            ) : null}
+
+            {recentApplications?.length === 0 ? (
+              <div className="mt-4 rounded-md bg-slate-50 p-5 text-center">
+                <p className="text-sm text-slate-600">
+                  You have not applied for any opportunities yet.
+                </p>
+                <Link
+                  className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                  href="/opportunities"
+                >
+                  Browse opportunities
+                  <ArrowRight className="ml-2" size={18} />
+                </Link>
+              </div>
+            ) : null}
+
+            {recentApplications && recentApplications.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {recentApplications.map((application) => (
+                  <article
+                    className="rounded-lg border border-slate-200 p-4"
+                    key={application.id}
+                  >
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <h3 className="font-semibold text-ink">
+                          {application.opportunityTitle}
+                        </h3>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {application.stakeholderName}
+                        </p>
+                        <p className="mt-2 text-sm text-slate-500">
+                          Applied/submitted: {formatApplicationDate(application.appliedAt)}
+                        </p>
+                      </div>
+                      <span
+                        className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
+                      >
+                        {application.statusLabel}
+                      </span>
+                    </div>
+                    <Link
+                      className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 sm:w-auto"
+                      href={`/applications/${application.id}`}
+                    >
+                      View application
+                      <ArrowRight className="ml-2" size={18} />
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            ) : null}
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold text-ink">Quick actions</h2>
+            <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+
+                return (
+                  <Link
+                    className="flex items-start gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-200 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
+                    href={action.href}
+                    key={action.title}
+                  >
+                    <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand-50 text-brand-700">
+                      <Icon size={20} />
+                    </span>
+                    <span>
+                      <span className="block font-semibold text-ink">{action.title}</span>
+                      <span className="mt-1 block text-sm leading-6 text-slate-600">
+                        {action.description}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
         </>
       ) : null}
     </div>

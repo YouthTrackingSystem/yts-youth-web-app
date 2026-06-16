@@ -16,6 +16,8 @@ export const apiEndpoints = {
     profilePersonal: "/api/youth/profile/personal",
     profileAddress: "/api/youth/profile/address",
     profileAvatar: "/api/youth/profile/avatar",
+    profileOccupation: "/api/youth/profile/occupation",
+    profileWishes: "/api/youth/profile/wishes",
     opportunities: "/api/youth/opportunities",
     opportunity: (id: string) => `/api/youth/opportunities/${id}`,
     opportunityApplicationState: (id: string) =>

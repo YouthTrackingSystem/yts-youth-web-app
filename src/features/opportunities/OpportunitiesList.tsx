@@ -15,7 +15,11 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
 import type { OpportunitySummary } from "@/types/youth";
-import { formatOpportunityDate, formatStipend } from "./formatters";
+import {
+  formatOpportunityDate,
+  formatStipend,
+  opportunityStatusBadgeClass
+} from "./formatters";
 import { opportunitiesService } from "./service";
 
 export function OpportunitiesList() {
@@ -96,6 +100,11 @@ export function OpportunitiesList() {
               </span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                 {opportunity.sectorName}
+              </span>
+              <span
+                className={`rounded-full px-3 py-1 ${opportunityStatusBadgeClass(opportunity.statusCode)}`}
+              >
+                {opportunity.statusLabel}
               </span>
             </div>
 
