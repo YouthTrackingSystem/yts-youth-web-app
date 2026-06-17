@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { PwaInstallProvider } from "@/hooks/usePwaInstall";
+import { TranslationProvider } from "@/hooks/useTranslation";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {
@@ -30,7 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <PwaInstallProvider>{children}</PwaInstallProvider>
+        <TranslationProvider>
+          <PwaInstallProvider>{children}</PwaInstallProvider>
+        </TranslationProvider>
       </body>
     </html>
   );

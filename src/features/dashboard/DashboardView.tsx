@@ -20,11 +20,13 @@ import {
   formatApplicationDate
 } from "@/features/applications/formatters";
 import { InstallBanner } from "@/features/pwa/InstallBanner";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import type { DashboardSummary, YouthApplicationSummary } from "@/types/youth";
 import { dashboardService } from "./service";
 
 export function DashboardView() {
+  const { t } = useTranslation();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentApplications, setRecentApplications] = useState<YouthApplicationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,69 +73,69 @@ export function DashboardView() {
 
   const cards = summary ? [
     {
-      title: "Profile",
+      title: t("nav.profile"),
       value: `${summary.profileCompletion}%`,
-      description: "Profile completion",
+      description: t("dashboard.profileCompletion"),
       href: "/profile",
       icon: UserRound
     },
     {
-      title: "Opportunities",
+      title: t("nav.opportunities"),
       value: summary.openOpportunities,
-      description: "Open opportunities",
+      description: t("dashboard.openOpportunities"),
       href: "/opportunities",
       icon: Sparkles
     },
     {
-      title: "Applications",
+      title: t("nav.applications"),
       value: summary.applicationsTotal,
-      description: `${summary.draftApplications} draft applications`,
+      description: t("dashboard.draftApplications", { count: summary.draftApplications }),
       href: "/applications",
       icon: ClipboardList
     },
     {
-      title: "Youth Groups",
-      value: "Groups",
-      description: "Connect with your assigned youth groups.",
+      title: t("nav.groups"),
+      value: t("nav.groups"),
+      description: t("dashboard.groupsDescription"),
       href: "/groups",
       icon: Users
     },
     {
-      title: "Youth Forums",
-      value: "Forums",
-      description: "Join youth discussions when forums are enabled.",
+      title: t("nav.forums"),
+      value: t("nav.forums"),
+      description: t("dashboard.forumsDescription"),
       href: "/forums",
       icon: MessageSquare
     }
   ] : [];
   const quickActions = [
     {
-      title: "Complete profile",
-      description: "Keep your information fresh for better matching.",
+      title: t("dashboard.completeProfile"),
+      description: t("dashboard.completeProfileHelp"),
       href: "/profile",
       icon: UserRound
     },
     {
-      title: "Browse opportunities",
-      description: "Find open training, work, and volunteer opportunities.",
+      title: t("dashboard.browseOpportunities"),
+      description: t("dashboard.browseOpportunitiesHelp"),
       href: "/opportunities",
       icon: Sparkles
     },
     {
-      title: "Track applications",
-      description: "Review drafts and follow submitted application status.",
+      title: t("dashboard.trackApplications"),
+      description: t("dashboard.trackApplicationsHelp"),
       href: "/applications",
       icon: ClipboardList
     },
     {
-      title: "Youth groups",
-      description: "View group access once it is enabled for your account.",
+      title: t("nav.groups"),
+      description: t("dashboard.groupsHelp"),
       href: "/groups",
       icon: Users
     },
     {
-      title: "Youth forums",
-      description: "Find discussions and forum updates when access is enabled.",
+      title: t("nav.forums"),
+      description: t("dashboard.forumsHelp"),
       href: "/forums",
       icon: MessageSquare
     }
@@ -146,18 +148,18 @@ export function DashboardView() {
       {!summary && !error ? (
         <div className="flex items-center justify-center py-16 text-sm text-slate-600">
           <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-          Loading dashboard
+          {t("dashboard.loading")}
         </div>
       ) : null}
 
       {error ? (
         <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
           <AlertCircle className="mx-auto text-red-600" size={28} />
-          <h1 className="mt-3 text-lg font-semibold text-ink">Dashboard unavailable</h1>
+          <h1 className="mt-3 text-lg font-semibold text-ink">{t("dashboard.unavailable")}</h1>
           <p className="mt-2 text-sm text-slate-600">{error}</p>
           <Button className="mt-5" onClick={loadDashboard} variant="secondary">
             <RefreshCw className="mr-2" size={18} />
-            Try again
+            {t("common.tryAgain")}
           </Button>
         </section>
       ) : null}
@@ -165,10 +167,10 @@ export function DashboardView() {
       {summary ? (
         <>
           <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
-            <p className="text-sm font-medium text-brand-100">Welcome back</p>
-            <h1 className="mt-2 text-2xl font-semibold">Youth dashboard</h1>
+            <p className="text-sm font-medium text-brand-100">{t("dashboard.welcome")}</p>
+            <h1 className="mt-2 text-2xl font-semibold">{t("dashboard.title")}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-50">
-              Track your profile, opportunities, and applications in one place.
+              {t("dashboard.subtitle")}
             </p>
           </section>
 
@@ -198,23 +200,23 @@ export function DashboardView() {
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-lg font-semibold text-ink">Recent applications</h2>
+                <h2 className="text-lg font-semibold text-ink">{t("dashboard.recentApplications")}</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  Fast view of your latest application status.
+                  {t("dashboard.recentApplicationsHelp")}
                 </p>
               </div>
               <Link
                 className="hidden text-sm font-semibold text-brand-700 hover:text-brand-800 sm:inline-flex"
                 href="/applications"
               >
-                View all
+                {t("common.viewAll")}
               </Link>
             </div>
 
             {recentApplications === null && !applicationsError ? (
               <div className="flex items-center justify-center py-8 text-sm text-slate-600">
                 <Loader2 className="mr-2 animate-spin text-brand-700" size={18} />
-                Loading recent applications
+                {t("dashboard.recentApplications")}
               </div>
             ) : null}
 
@@ -227,7 +229,7 @@ export function DashboardView() {
                   variant="secondary"
                 >
                   <RefreshCw className="mr-2" size={18} />
-                  Retry
+                  {t("common.retry")}
                 </Button>
               </div>
             ) : null}
@@ -235,13 +237,13 @@ export function DashboardView() {
             {recentApplications?.length === 0 ? (
               <div className="mt-4 rounded-md bg-slate-50 p-5 text-center">
                 <p className="text-sm text-slate-600">
-                  You have not applied for any opportunities yet.
+                  {t("dashboard.noApplications")}
                 </p>
                 <Link
                   className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
                   href="/opportunities"
                 >
-                  Browse opportunities
+                  {t("dashboard.browseOpportunities")}
                   <ArrowRight className="ml-2" size={18} />
                 </Link>
               </div>
@@ -263,7 +265,7 @@ export function DashboardView() {
                           {application.stakeholderName}
                         </p>
                         <p className="mt-2 text-sm text-slate-500">
-                          Applied/submitted: {formatApplicationDate(application.appliedAt)}
+                          {t("dashboard.appliedSubmitted")}: {formatApplicationDate(application.appliedAt)}
                         </p>
                       </div>
                       <span
@@ -276,7 +278,7 @@ export function DashboardView() {
                       className="mt-4 inline-flex min-h-10 w-full items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-ink transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2 sm:w-auto"
                       href={`/applications/${application.id}`}
                     >
-                      View application
+                      {t("dashboard.viewApplication")}
                       <ArrowRight className="ml-2" size={18} />
                     </Link>
                   </article>
@@ -286,7 +288,7 @@ export function DashboardView() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold text-ink">Quick actions</h2>
+            <h2 className="text-lg font-semibold text-ink">{t("dashboard.quickActions")}</h2>
             <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
               {quickActions.map((action) => {
                 const Icon = action.icon;

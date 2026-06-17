@@ -16,6 +16,7 @@ import {
   Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import type {
   YouthApplicationDraftInput,
@@ -38,6 +39,7 @@ const emptyDraft: YouthApplicationDraftInput = {
 };
 
 export function ApplicationDetail({ id }: ApplicationDetailProps) {
+  const { t } = useTranslation();
   const [application, setApplication] = useState<YouthApplicationSummary | null>(null);
   const [draft, setDraft] = useState<YouthApplicationDraftInput>(emptyDraft);
   const [error, setError] = useState<string | null>(null);
@@ -191,7 +193,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-slate-600">
         <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading application
+        {t("applications.loading")}
       </div>
     );
   }
@@ -200,11 +202,11 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
     return (
       <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
         <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Application unavailable</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("applications.unavailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">{error}</p>
         <Button className="mt-5" onClick={loadApplication} variant="secondary">
           <RefreshCw className="mr-2" size={18} />
-          Try again
+          {t("common.tryAgain")}
         </Button>
       </section>
     );
@@ -221,7 +223,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
         href="/applications"
       >
         <ArrowLeft className="mr-2" size={18} />
-        Back to applications
+        {t("applications.backToApplications")}
       </Link>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -283,7 +285,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           <div>
             <h2 className="text-lg font-semibold text-ink">CV</h2>
             <p className="mt-1 text-sm text-slate-600">
-              {application.hasCv ? "CV uploaded" : "No CV uploaded"}
+              {application.hasCv ? t("applications.cvUploaded") : t("applications.noCv")}
             </p>
           </div>
         </div>
@@ -300,7 +302,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
             ) : (
               <Download className="mr-2" size={18} />
             )}
-            Download/View CV
+            {t("applications.downloadCv")}
           </Button>
         ) : null}
 
@@ -308,7 +310,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           <div className="space-y-3 border-t border-slate-200 pt-4">
             <label className="block">
               <span className="mb-2 block text-sm font-medium text-slate-700">
-                Upload CV
+                {t("applications.uploadCv")}
               </span>
               <input
                 accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
@@ -336,7 +338,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
               ) : (
                 <Upload className="mr-2" size={18} />
               )}
-              Upload CV
+              {t("applications.uploadCv")}
             </Button>
           </div>
         ) : null}
@@ -348,9 +350,9 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           onSubmit={handleFormSubmit}
         >
           <div>
-            <h2 className="text-lg font-semibold text-ink">Edit draft</h2>
+            <h2 className="text-lg font-semibold text-ink">{t("applications.editDraft")}</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Save your changes or submit when the application is ready.
+              {t("applications.editDraftHelp")}
             </p>
           </div>
 
@@ -401,7 +403,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
               ) : (
                 <Save className="mr-2" size={18} />
               )}
-              Save draft
+              {t("applications.saveDraft")}
             </Button>
             <Button
               disabled={action !== null}
@@ -414,7 +416,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
               ) : (
                 <Send className="mr-2" size={18} />
               )}
-              Submit application
+              {t("applications.submitApplication")}
             </Button>
           </div>
         </form>

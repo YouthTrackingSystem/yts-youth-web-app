@@ -1,14 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import { BriefcaseBusiness, ClipboardList, Home, UserRound } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const navItems = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/opportunities", label: "Opportunities", icon: BriefcaseBusiness },
-  { href: "/applications", label: "Applications", icon: ClipboardList },
-  { href: "/profile", label: "Profile", icon: UserRound }
-];
+  { href: "/dashboard", labelKey: "nav.home", icon: Home },
+  { href: "/opportunities", labelKey: "nav.opportunities", icon: BriefcaseBusiness },
+  { href: "/applications", labelKey: "nav.applications", icon: ClipboardList },
+  { href: "/profile", labelKey: "nav.profile", icon: UserRound }
+] as const;
 
 export function BottomNav() {
+  const { t } = useTranslation();
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white md:hidden">
       <div className="grid grid-cols-4">
@@ -22,7 +27,7 @@ export function BottomNav() {
               key={item.href}
             >
               <Icon size={20} />
-              <span className="max-w-full truncate">{item.label}</span>
+              <span className="max-w-full truncate">{t(item.labelKey)}</span>
             </Link>
           );
         })}

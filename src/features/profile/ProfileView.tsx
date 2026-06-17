@@ -24,6 +24,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
 import { registrationService } from "@/features/auth/registrationService";
+import { useTranslation } from "@/hooks/useTranslation";
 import type {
   LocationLevel,
   RegistrationApplication,
@@ -157,6 +158,7 @@ function ProfileList({ items, emptyText }: { items: string[]; emptyText: string 
 }
 
 export function ProfileView() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<YouthProfileSummary | null>(null);
   const [registration, setRegistration] = useState<RegistrationApplication | null>(null);
   const [locationOptions, setLocationOptions] = useState<LocationOptions>(emptyLocationOptions);
@@ -491,7 +493,7 @@ export function ProfileView() {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-slate-600">
         <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading profile
+        {t("common.loading")} {t("nav.profile").toLowerCase()}
       </div>
     );
   }
@@ -500,11 +502,11 @@ export function ProfileView() {
     return (
       <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
         <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Profile unavailable</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("profile.unavailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">{error}</p>
         <Button className="mt-5" onClick={loadProfile} variant="secondary">
           <RefreshCw className="mr-2" size={18} />
-          Try again
+          {t("common.tryAgain")}
         </Button>
       </section>
     );
@@ -514,9 +516,9 @@ export function ProfileView() {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <UserRound className="mx-auto text-brand-700" size={30} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Profile not available</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("profile.notAvailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          No youth profile is linked to this account yet.
+          {t("profile.noLinkedProfile")}
         </p>
       </section>
     );
@@ -601,7 +603,7 @@ export function ProfileView() {
             </div>
 
             <div className="min-w-0">
-              <p className="text-sm font-medium text-brand-100">My profile</p>
+              <p className="text-sm font-medium text-brand-100">{t("profile.title")}</p>
               <h1 className="mt-1 text-2xl font-semibold">{profile.name}</h1>
               <div className="mt-4 flex flex-wrap gap-2">
                 <span
@@ -617,7 +619,7 @@ export function ProfileView() {
           </div>
           <div className="w-fit rounded-lg bg-white/10 px-4 py-3 text-center sm:justify-self-end">
             <p className="text-2xl font-semibold">{profile.profileCompletion}%</p>
-            <p className="text-xs text-brand-100">Profile completion</p>
+            <p className="text-xs text-brand-100">{t("profile.completion")}</p>
           </div>
         </div>
 
@@ -658,13 +660,13 @@ export function ProfileView() {
           />
         </div>
         <p className="mt-3 text-sm text-brand-50">
-          Complete your profile to improve opportunity matching.
+          {t("profile.completionHelp")}
         </p>
       </section>
 
       {missingSections.length > 0 ? (
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h2 className="text-sm font-semibold text-amber-900">Profile sections to complete</h2>
+          <h2 className="text-sm font-semibold text-amber-900">{t("profile.sectionsToComplete")}</h2>
           <p className="mt-1 text-sm text-amber-800">
             Add {missingSections.join(", ")} to strengthen your youth journey profile.
           </p>
@@ -686,7 +688,7 @@ export function ProfileView() {
       ) : null}
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-ink">Overview</h2>
+        <h2 className="text-lg font-semibold text-ink">{t("profile.overview")}</h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
           <div><dt className="font-medium text-slate-500">Phone</dt><dd className="mt-1 text-ink">{displayValue(profile.phoneNumber)}</dd></div>
           <div><dt className="font-medium text-slate-500">Email</dt><dd className="mt-1 break-all text-ink">{displayValue(profile.email)}</dd></div>
@@ -702,7 +704,7 @@ export function ProfileView() {
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center gap-2">
           <MapPin className="text-brand-700" size={20} />
-          <h2 className="text-lg font-semibold text-ink">Residence address</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("profile.residenceAddress")}</h2>
         </div>
         <p className="mt-3 text-sm text-slate-700">
           {profile.residence?.physicalAddress ?? "Physical address not provided"}
@@ -736,7 +738,7 @@ export function ProfileView() {
 
       <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveOccupation}>
         <div>
-          <h2 className="text-lg font-semibold text-ink">Edit occupation</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("profile.editOccupation")}</h2>
           <p className="mt-1 text-sm text-slate-600">
             Update your work status and sector so opportunity matching stays useful.
           </p>
@@ -812,13 +814,13 @@ export function ProfileView() {
         </div>
         <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">
           {action === "occupation" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}
-          Save occupation
+          {t("profile.saveOccupation")}
         </Button>
       </form>
 
       <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveWishes}>
         <div>
-          <h2 className="text-lg font-semibold text-ink">Edit youth wishes</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("profile.editWishes")}</h2>
           <p className="mt-1 text-sm text-slate-600">
             Tell YTS what opportunities you want to pursue next.
           </p>
@@ -928,18 +930,18 @@ export function ProfileView() {
         ) : null}
         <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">
           {action === "wishes" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}
-          Save youth wishes
+          {t("profile.saveWishes")}
         </Button>
       </form>
 
       <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={savePersonal}>
         <div>
-          <h2 className="text-lg font-semibold text-ink">Edit personal details</h2>
-          <p className="mt-1 text-sm text-slate-600">Update the permitted personal profile fields.</p>
+          <h2 className="text-lg font-semibold text-ink">{t("profile.editPersonal")}</h2>
+          <p className="mt-1 text-sm text-slate-600">{t("profile.editPersonalHelp")}</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Primary phone</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.primaryPhone")}</span>
             <input
               className="h-11 w-full rounded-md border border-slate-300 bg-slate-100 px-3 text-sm text-slate-700 outline-none"
               readOnly
@@ -947,11 +949,11 @@ export function ProfileView() {
               value={profile.phoneNumber ?? ""}
             />
             <span className="mt-1 block text-xs text-slate-500">
-              Phone number is used for login and cannot be changed here.
+              {t("profile.phoneLocked")}
             </span>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Email</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.email")}</span>
             <input
               className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, email: event.target.value }))}
@@ -960,7 +962,7 @@ export function ProfileView() {
             />
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Gender</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.gender")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, gender: event.target.value }))}
@@ -973,7 +975,7 @@ export function ProfileView() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Religion</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.religion")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, religionId: numberOrNull(event.target.value) }))}
@@ -987,7 +989,7 @@ export function ProfileView() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Marital status</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.maritalStatus")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, maritalStatus: event.target.value }))}
@@ -1003,7 +1005,7 @@ export function ProfileView() {
             </select>
           </label>
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Has disability</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.hasDisability")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, hasDisability: event.target.value, disabilityTypeId: event.target.value === "Yes" ? current.disabilityTypeId : null }))}
@@ -1018,7 +1020,7 @@ export function ProfileView() {
         </div>
         {personal.hasDisability === "Yes" ? (
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Disability type</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.disabilityType")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => setPersonal((current) => ({ ...current, disabilityTypeId: numberOrNull(event.target.value) }))}
@@ -1032,13 +1034,13 @@ export function ProfileView() {
             </select>
           </label>
         ) : null}
-        <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Emergency contact</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, emergencyContact: event.target.value }))} required type="tel" value={personal.emergencyContact} /></label>
-        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "personal" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}Save personal details</Button>
+        <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.emergencyContact")}</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setPersonal((current) => ({ ...current, emergencyContact: event.target.value }))} required type="tel" value={personal.emergencyContact} /></label>
+        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "personal" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}{t("profile.savePersonal")}</Button>
       </form>
 
       <form className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={saveAddress}>
         <div>
-          <h2 className="text-lg font-semibold text-ink">Edit residence address</h2>
+          <h2 className="text-lg font-semibold text-ink">{t("profile.editAddress")}</h2>
           <p className="mt-1 text-sm text-slate-600">
             Update your residence within your assigned {registration?.scope.assigned_level ?? "location"} scope.
           </p>
@@ -1074,7 +1076,7 @@ export function ProfileView() {
           {isDetectingLocation ? <Loader2 className="mr-2 animate-spin" size={18} /> : <LocateFixed className="mr-2" size={18} />}
           Use current GPS location
         </Button>
-        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "address" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}Save address</Button>
+        <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "address" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}{t("profile.saveAddress")}</Button>
       </form>
     </div>
   );

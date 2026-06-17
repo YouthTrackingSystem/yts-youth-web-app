@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { OfflineNotice } from "@/components/feedback/OfflineNotice";
 import { Button } from "@/components/ui/Button";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import type { YouthSessionState } from "@/types/auth";
 import { authService } from "./service";
@@ -20,6 +21,7 @@ function sessionDestination(session: YouthSessionState) {
 
 export function LoginForm() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,7 +56,7 @@ export function LoginForm() {
           ? caughtError.message
           : caughtError instanceof Error
             ? caughtError.message
-            : "Unable to sign in. Please try again."
+            : t("login.error")
       );
       setIsSubmitting(false);
     }
@@ -73,14 +75,14 @@ export function LoginForm() {
 
       <label className="block">
         <span className="mb-2 block text-sm font-medium text-slate-700">
-          Phone number
+          {t("login.phone")}
         </span>
         <input
           autoComplete="username"
           className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
           inputMode="tel"
           onChange={(event) => setPhoneNumber(event.target.value)}
-          placeholder="Enter your phone number"
+          placeholder={t("login.phonePlaceholder")}
           required
           type="tel"
           value={phoneNumber}
@@ -89,13 +91,13 @@ export function LoginForm() {
 
       <label className="block">
         <span className="mb-2 block text-sm font-medium text-slate-700">
-          Password
+          {t("login.password")}
         </span>
         <input
           autoComplete="current-password"
           className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Enter your password"
+          placeholder={t("login.passwordPlaceholder")}
           required
           type="password"
           value={password}
@@ -106,10 +108,10 @@ export function LoginForm() {
         {isSubmitting ? (
           <>
             <Loader2 className="mr-2 animate-spin" size={18} />
-            Checking
+            {t("common.checking")}
           </>
         ) : (
-          "Sign in"
+          t("login.signIn")
         )}
       </Button>
     </form>

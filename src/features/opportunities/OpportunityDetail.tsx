@@ -16,6 +16,7 @@ import {
   Send
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import { applicationsService } from "@/features/applications/service";
 import type {
@@ -36,6 +37,7 @@ type OpportunityDetailProps = {
 
 export function OpportunityDetail({ id }: OpportunityDetailProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [opportunity, setOpportunity] = useState<OpportunitySummary | null>(null);
   const [applicationState, setApplicationState] =
     useState<OpportunityApplicationState | null>(null);
@@ -119,7 +121,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-slate-600">
         <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading opportunity
+        {t("opportunities.loadingDetail")}
       </div>
     );
   }
@@ -128,11 +130,11 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
     return (
       <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
         <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Opportunity unavailable</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("opportunities.unavailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">{error}</p>
         <Button className="mt-5" onClick={loadOpportunity} variant="secondary">
           <RefreshCw className="mr-2" size={18} />
-          Try again
+          {t("common.tryAgain")}
         </Button>
       </section>
     );
@@ -151,7 +153,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
         href="/opportunities"
       >
         <ArrowLeft className="mr-2" size={18} />
-        Back to opportunities
+        {t("opportunities.backToOpportunities")}
       </Link>
 
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
@@ -243,7 +245,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
                 {applicationState.canEdit ? "Draft application started" : "Application submitted"}
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                Status: {formatStatus(applicationState.status)}
+                {t("common.status")}: {formatStatus(applicationState.status)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
                 Application ID: {applicationState.applicationId ?? "Not available"}
@@ -254,24 +256,24 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
                   href={`/applications/${applicationState.applicationId}`}
                 >
                   <FilePenLine className="mr-2" size={18} />
-                  {applicationState.canEdit ? "Continue draft" : "View application"}
+                  {applicationState.canEdit ? t("opportunities.continueDraft") : t("applications.viewApplication")}
                 </Link>
               ) : null}
             </div>
           </div>
         ) : !isOpenForApplications ? (
           <div>
-            <h2 className="font-semibold text-ink">Applications unavailable</h2>
+            <h2 className="font-semibold text-ink">{t("applications.unavailable")}</h2>
             <p className="mt-1 text-sm text-slate-600">
               This opportunity is not currently open for applications. Check the opening and closing dates above.
             </p>
             <Button className="mt-4 w-full sm:w-auto" disabled variant="secondary">
-              Apply unavailable
+              {t("opportunities.applyUnavailable")}
             </Button>
           </div>
         ) : (
           <div>
-            <h2 className="font-semibold text-ink">Ready to apply?</h2>
+            <h2 className="font-semibold text-ink">{t("opportunities.readyToApply")}</h2>
             <p className="mt-1 text-sm text-slate-600">
               Start a draft application now. You can edit and submit it from the application page.
             </p>
@@ -285,7 +287,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
               ) : (
                 <Send className="mr-2" size={18} />
               )}
-              Start application
+              {t("opportunities.startApplication")}
             </Button>
           </div>
         )}

@@ -13,6 +13,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import type { OpportunitySummary } from "@/types/youth";
 import {
@@ -23,6 +24,7 @@ import {
 import { opportunitiesService } from "./service";
 
 export function OpportunitiesList() {
+  const { t } = useTranslation();
   const [opportunities, setOpportunities] = useState<OpportunitySummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,10 +37,10 @@ export function OpportunitiesList() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load opportunities. Please try again."
+          : t("opportunities.unavailable")
       );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadOpportunities();
@@ -48,7 +50,7 @@ export function OpportunitiesList() {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-slate-600">
         <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading opportunities
+        {t("opportunities.loading")}
       </div>
     );
   }
@@ -57,11 +59,11 @@ export function OpportunitiesList() {
     return (
       <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
         <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Opportunities unavailable</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("opportunities.unavailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">{error}</p>
         <Button className="mt-5" onClick={loadOpportunities} variant="secondary">
           <RefreshCw className="mr-2" size={18} />
-          Try again
+          {t("common.tryAgain")}
         </Button>
       </section>
     );
@@ -71,9 +73,9 @@ export function OpportunitiesList() {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <BriefcaseBusiness className="mx-auto text-brand-700" size={30} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">No opportunities available</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("opportunities.empty")}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          New opportunities will appear here when they are published.
+          {t("opportunities.empty")}
         </p>
       </section>
     );
@@ -82,9 +84,9 @@ export function OpportunitiesList() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-ink">Opportunities</h1>
+        <h1 className="text-2xl font-semibold text-ink">{t("opportunities.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Explore currently available youth opportunities.
+          {t("dashboard.browseOpportunitiesHelp")}
         </p>
       </header>
 
@@ -131,7 +133,7 @@ export function OpportunitiesList() {
               <div className="flex gap-2 sm:col-span-2">
                 <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">Applications</dt>
+                  <dt className="font-medium text-ink">{t("nav.applications")}</dt>
                   <dd>
                     {formatOpportunityDate(opportunity.opensAt)} to{" "}
                     {formatOpportunityDate(opportunity.closesAt)}
@@ -144,7 +146,7 @@ export function OpportunitiesList() {
               className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
               href={`/opportunities/${opportunity.id}`}
             >
-              View details
+              {t("opportunities.viewDetails")}
               <ArrowRight className="ml-2" size={18} />
             </Link>
           </article>

@@ -11,6 +11,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
 import type { YouthApplicationSummary } from "@/types/youth";
 import {
@@ -20,6 +21,7 @@ import {
 import { applicationsService } from "./service";
 
 export function ApplicationsList() {
+  const { t } = useTranslation();
   const [applications, setApplications] =
     useState<YouthApplicationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +35,10 @@ export function ApplicationsList() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load applications. Please try again."
+          : t("applications.unavailable")
       );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadApplications();
@@ -46,7 +48,7 @@ export function ApplicationsList() {
     return (
       <div className="flex items-center justify-center py-16 text-sm text-slate-600">
         <Loader2 className="mr-2 animate-spin text-brand-700" size={20} />
-        Loading applications
+        {t("applications.loading")}
       </div>
     );
   }
@@ -55,11 +57,11 @@ export function ApplicationsList() {
     return (
       <section className="rounded-lg border border-red-200 bg-white p-6 text-center shadow-sm">
         <AlertCircle className="mx-auto text-red-600" size={28} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">Applications unavailable</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("applications.unavailable")}</h1>
         <p className="mt-2 text-sm text-slate-600">{error}</p>
         <Button className="mt-5" onClick={loadApplications} variant="secondary">
           <RefreshCw className="mr-2" size={18} />
-          Try again
+          {t("common.tryAgain")}
         </Button>
       </section>
     );
@@ -69,9 +71,9 @@ export function ApplicationsList() {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <ClipboardList className="mx-auto text-brand-700" size={30} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">No applications yet</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("applications.empty")}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Your draft and submitted applications will appear here.
+          {t("applications.empty")}
         </p>
       </section>
     );
@@ -80,9 +82,9 @@ export function ApplicationsList() {
   return (
     <div className="space-y-5">
       <header>
-        <h1 className="text-2xl font-semibold text-ink">My applications</h1>
+        <h1 className="text-2xl font-semibold text-ink">{t("applications.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Review drafts and track submitted applications.
+          {t("dashboard.trackApplicationsHelp")}
         </p>
       </header>
 
@@ -138,7 +140,7 @@ export function ApplicationsList() {
               className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
               href={`/applications/${application.id}`}
             >
-              {application.isDraft ? "Edit draft" : "View application"}
+              {application.isDraft ? t("applications.saveDraft") : t("applications.viewApplication")}
               <ArrowRight className="ml-2" size={18} />
             </Link>
           </article>

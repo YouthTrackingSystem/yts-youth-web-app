@@ -1,17 +1,26 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowLeft, type LucideIcon } from "lucide-react";
+import { ArrowLeft, MessageSquare, Users } from "lucide-react";
+import { useTranslation } from "@/hooks/useTranslation";
+import type { TranslationKey } from "@/lib/i18n/translations";
 
 type ReleasePlaceholderPageProps = {
-  title: string;
-  message: string;
-  icon: LucideIcon;
+  titleKey: TranslationKey;
+  messageKey: TranslationKey;
+  icon: "groups" | "forums";
 };
 
 export function ReleasePlaceholderPage({
-  title,
-  message,
-  icon: Icon
+  titleKey,
+  messageKey,
+  icon
 }: ReleasePlaceholderPageProps) {
+  const { t } = useTranslation();
+  const title = t(titleKey);
+  const message = t(messageKey);
+  const Icon = icon === "groups" ? Users : MessageSquare;
+
   return (
     <div className="space-y-5">
       <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
@@ -35,7 +44,7 @@ export function ReleasePlaceholderPage({
           href="/dashboard"
         >
           <ArrowLeft className="mr-2" size={18} />
-          Back to dashboard
+          {t("common.backToDashboard")}
         </Link>
       </section>
     </div>
