@@ -39,7 +39,9 @@ export const dashboardService: DashboardService = {
       applicationsTotal:
         typeof applications.total === "number" ? applications.total : 0,
       draftApplications:
-        typeof applications.draft === "number" ? applications.draft : 0
+        typeof applications.draft === "number" ? applications.draft : 0,
+      submittedApplications:
+        typeof applications.submitted === "number" ? applications.submitted : 0
     };
   }
 };

@@ -18,6 +18,10 @@ export const apiEndpoints = {
     profileAvatar: "/api/youth/profile/avatar",
     profileOccupation: "/api/youth/profile/occupation",
     profileWishes: "/api/youth/profile/wishes",
+    groups: "/api/youth/groups",
+    group: (id: string) => `/api/youth/groups/${id}`,
+    forums: "/api/youth/forums",
+    forum: (id: string) => `/api/youth/forums/${id}`,
     opportunities: "/api/youth/opportunities",
     opportunity: (id: string) => `/api/youth/opportunities/${id}`,
     opportunityApplicationState: (id: string) =>

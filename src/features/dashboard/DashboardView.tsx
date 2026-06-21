@@ -71,25 +71,39 @@ export function DashboardView() {
     loadDashboard();
   }, [loadDashboard]);
 
+  const applicationDescription = summary
+    ? summary.applicationsTotal === 0
+      ? t("dashboard.noApplicationKpi")
+      : summary.draftApplications === 1
+        ? t("dashboard.oneDraftApplication")
+        : summary.draftApplications > 1
+          ? t("dashboard.multipleDraftApplications", { count: summary.draftApplications })
+          : summary.submittedApplications === 1
+            ? t("dashboard.oneSubmittedApplication")
+            : t("dashboard.activeApplications", {
+                count: summary.submittedApplications || summary.applicationsTotal
+              })
+    : "";
+
   const cards = summary ? [
     {
       title: t("nav.profile"),
       value: `${summary.profileCompletion}%`,
-      description: t("dashboard.profileCompletion"),
+      description: t("dashboard.profileKpiDescription"),
       href: "/profile",
       icon: UserRound
     },
     {
       title: t("nav.opportunities"),
       value: summary.openOpportunities,
-      description: t("dashboard.openOpportunities"),
+      description: t("dashboard.opportunitiesKpiDescription"),
       href: "/opportunities",
       icon: Sparkles
     },
     {
       title: t("nav.applications"),
       value: summary.applicationsTotal,
-      description: t("dashboard.draftApplications", { count: summary.draftApplications }),
+      description: applicationDescription,
       href: "/applications",
       icon: ClipboardList
     },

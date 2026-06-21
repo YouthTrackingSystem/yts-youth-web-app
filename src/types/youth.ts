@@ -3,6 +3,7 @@ export type DashboardSummary = {
   openOpportunities: number;
   applicationsTotal: number;
   draftApplications: number;
+  submittedApplications: number;
 };
 
 export type YouthProfileOption = {
