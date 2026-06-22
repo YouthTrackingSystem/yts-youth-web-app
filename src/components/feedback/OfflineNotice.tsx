@@ -2,6 +2,7 @@
 
 import { WifiOff } from "lucide-react";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useTranslation } from "@/hooks/useTranslation";
 
 type OfflineNoticeProps = {
   mode?: "banner" | "inline";
@@ -9,13 +10,13 @@ type OfflineNoticeProps = {
 
 export function OfflineNotice({ mode = "banner" }: OfflineNoticeProps) {
   const isOnline = useOnlineStatus();
+  const { t } = useTranslation();
 
   if (isOnline) {
     return null;
   }
 
-  const message =
-    "You are offline. Previously viewed pages may remain visible, but submissions are paused until you reconnect.";
+  const message = t("offline.message");
 
   if (mode === "inline") {
     return (

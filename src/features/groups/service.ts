@@ -39,9 +39,9 @@ function normalizeGroup(value: unknown): YouthGroupSummary {
 
   return {
     id: readString(group, "id") ?? "",
-    name: readString(group, "name") ?? "Unnamed group",
-    groupType: readString(group, "group_type") ?? "Not specified",
-    status: readString(group, "status") ?? "Unknown",
+    name: readString(group, "name") ?? "-",
+    groupType: readString(group, "group_type") ?? "-",
+    status: readString(group, "status") ?? "-",
     membersCount: readNumber(group, "members_count"),
     joinedAt: readString(group, "joined_at")
   };

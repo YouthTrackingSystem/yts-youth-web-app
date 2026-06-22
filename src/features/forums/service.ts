@@ -41,9 +41,9 @@ function normalizeForum(value: unknown): YouthForumSummary {
 
   return {
     id: readString(forum, "id") ?? "",
-    name: readString(forum, "name") ?? "Unnamed forum",
-    forumType: readString(forum, "forum_type") ?? readString(forum, "type") ?? "Not specified",
-    status: readString(forum, "status") ?? "Unknown",
+    name: readString(forum, "name") ?? "-",
+    forumType: readString(forum, "forum_type") ?? readString(forum, "type") ?? "-",
+    status: readString(forum, "status") ?? "-",
     membersCount: readNumber(forum, "members_count"),
     joinedAt: readString(forum, "joined_at")
   };

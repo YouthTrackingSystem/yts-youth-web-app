@@ -18,6 +18,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateOpportunityType } from "@/lib/i18n/opportunityType";
+import { translateStatus } from "@/lib/i18n/status";
 import { applicationsService } from "@/features/applications/service";
 import type {
   OpportunityApplicationState,
@@ -25,7 +27,6 @@ import type {
 } from "@/types/youth";
 import {
   formatOpportunityDate,
-  formatStatus,
   formatStipend,
   opportunityStatusBadgeClass
 } from "./formatters";
@@ -37,7 +38,7 @@ type OpportunityDetailProps = {
 
 export function OpportunityDetail({ id }: OpportunityDetailProps) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [opportunity, setOpportunity] = useState<OpportunitySummary | null>(null);
   const [applicationState, setApplicationState] =
     useState<OpportunityApplicationState | null>(null);
@@ -60,10 +61,10 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load this opportunity. Please try again."
+          : t("opportunities.unavailable")
       );
     }
-  }, [id]);
+  }, [id, t]);
 
   function isApplicationWindowOpen(nextOpportunity: OpportunitySummary) {
     const today = new Date();
@@ -99,13 +100,13 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
         portfolioUrl: "",
         notes: ""
       });
-      setNotice("Draft application created. Opening the editor...");
+      setNotice(t("opportunities.draftCreated"));
       router.push(`/applications/${application.id}`);
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to start this application. Please try again."
+          : t("opportunities.applyUnavailable")
       );
       await loadOpportunity().catch(() => undefined);
     } finally {
@@ -159,7 +160,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="flex flex-wrap gap-2 text-xs font-medium">
           <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
-            {opportunity.typeLabel}
+            {translateOpportunityType(opportunity.typeLabel, t)}
           </span>
           <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
             {opportunity.sectorName}
@@ -167,7 +168,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
           <span
             className={`rounded-full px-3 py-1 ${opportunityStatusBadgeClass(opportunity.statusCode)}`}
           >
-            {opportunity.statusLabel}
+            {translateStatus(opportunity.statusCode || opportunity.statusLabel, t)}
           </span>
         </div>
 
@@ -186,36 +187,36 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
           <div className="flex gap-3">
             <MapPin className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Location</dt>
+              <dt className="font-semibold text-ink">{t("common.location")}</dt>
               <dd className="mt-1 text-slate-600">{opportunity.location}</dd>
             </div>
           </div>
           <div className="flex gap-3">
             <Banknote className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Stipend</dt>
+              <dt className="font-semibold text-ink">{t("opportunities.stipend")}</dt>
               <dd className="mt-1 text-slate-600">
-                {formatStipend(opportunity.stipendAmount)}
+                {formatStipend(opportunity.stipendAmount, language, t("common.notProvided"))}
               </dd>
             </div>
           </div>
           <div className="flex gap-3">
             <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Application dates</dt>
+              <dt className="font-semibold text-ink">{t("opportunities.applicationDates")}</dt>
               <dd className="mt-1 text-slate-600">
-                {formatOpportunityDate(opportunity.opensAt)} to{" "}
-                {formatOpportunityDate(opportunity.closesAt)}
+                {formatOpportunityDate(opportunity.opensAt, language, t("common.notAvailable"))} {t("common.to")}{" "}
+                {formatOpportunityDate(opportunity.closesAt, language, t("common.notAvailable"))}
               </dd>
             </div>
           </div>
           <div className="flex gap-3">
             <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Opportunity dates</dt>
+              <dt className="font-semibold text-ink">{t("opportunities.opportunityDates")}</dt>
               <dd className="mt-1 text-slate-600">
-                {formatOpportunityDate(opportunity.startsAt)} to{" "}
-                {formatOpportunityDate(opportunity.endsAt)}
+                {formatOpportunityDate(opportunity.startsAt, language, t("common.notAvailable"))} {t("common.to")}{" "}
+                {formatOpportunityDate(opportunity.endsAt, language, t("common.notAvailable"))}
               </dd>
             </div>
           </div>
@@ -242,13 +243,13 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
             <CheckCircle2 className="mt-0.5 shrink-0 text-brand-700" size={22} />
             <div>
               <h2 className="font-semibold text-ink">
-                {applicationState.canEdit ? "Draft application started" : "Application submitted"}
+                {applicationState.canEdit ? t("opportunities.draftStarted") : t("opportunities.applicationSubmitted")}
               </h2>
               <p className="mt-1 text-sm text-slate-600">
-                {t("common.status")}: {formatStatus(applicationState.status)}
+                {t("opportunities.applicationStatus")}: {translateStatus(applicationState.status, t)}
               </p>
               <p className="mt-1 text-sm text-slate-600">
-                Application ID: {applicationState.applicationId ?? "Not available"}
+                {t("opportunities.applicationId")}: {applicationState.applicationId ?? t("common.notAvailable")}
               </p>
               {applicationState.applicationId ? (
                 <Link
@@ -265,7 +266,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
           <div>
             <h2 className="font-semibold text-ink">{t("applications.unavailable")}</h2>
             <p className="mt-1 text-sm text-slate-600">
-              This opportunity is not currently open for applications. Check the opening and closing dates above.
+              {t("opportunities.closedHelp")}
             </p>
             <Button className="mt-4 w-full sm:w-auto" disabled variant="secondary">
               {t("opportunities.applyUnavailable")}
@@ -275,7 +276,7 @@ export function OpportunityDetail({ id }: OpportunityDetailProps) {
           <div>
             <h2 className="font-semibold text-ink">{t("opportunities.readyToApply")}</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Start a draft application now. You can edit and submit it from the application page.
+              {t("opportunities.readyHelp")}
             </p>
             <Button
               className="mt-4 w-full sm:w-auto"

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type { YouthGroupDetail } from "@/types/groups";
 import {
   formatGroupDate,
@@ -92,7 +93,7 @@ export function GroupDetail({ id }: GroupDetailProps) {
             <h1 className="mt-1 text-2xl font-semibold text-ink">{group.name}</h1>
           </div>
           <span className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${groupStatusBadgeClass(group.status)}`}>
-            {group.status}
+            {translateStatus(group.status, t)}
           </span>
         </div>
 

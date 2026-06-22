@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/Button";
 import { ApiError } from "@/lib/api/errors";
 import { registrationService } from "@/features/auth/registrationService";
 import { useTranslation } from "@/hooks/useTranslation";
+import { translateStatus } from "@/lib/i18n/status";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import type {
   LocationLevel,
   RegistrationApplication,
@@ -96,16 +98,21 @@ const emptyLocationOptions: LocationOptions = {
   street: []
 };
 
+const locationTranslationKeys: Record<LocationLevel, TranslationKey> = {
+  country: "profile.country",
+  region: "profile.region",
+  district: "profile.district",
+  division: "profile.division",
+  ward: "profile.ward",
+  street: "profile.street"
+};
+
 function numberOrNull(value: string) {
   return value === "" ? null : Number(value);
 }
 
 function addressKey(level: LocationLevel) {
   return `${level}Id` as const;
-}
-
-function displayValue(value?: string) {
-  return value || "Not provided";
 }
 
 function profileInitials(name: string) {
@@ -115,14 +122,6 @@ function profileInitials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("") || "Y";
-}
-
-function formatStatus(value?: string) {
-  if (!value) return "Not set";
-
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function journeyBadgeClass(status?: string) {
@@ -175,6 +174,21 @@ export function ProfileView() {
   const [isDetectingLocation, setIsDetectingLocation] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
+  const displayValue = (value?: string) => value || t("common.notProvided");
+  const translateFixedValue = (value?: string) => {
+    switch (value) {
+      case "Yes": return t("common.yes");
+      case "No": return t("common.no");
+      case "Male": return t("common.male");
+      case "Female": return t("common.female");
+      case "Single": return t("common.single");
+      case "Married": return t("common.married");
+      case "Divorced": return t("common.divorced");
+      case "Widowed":
+      case "Widow/Widower": return t("common.widowed");
+      default: return displayValue(value);
+    }
+  };
 
   const syncProfile = useCallback((nextProfile: YouthProfileSummary | null) => {
     setProfile(nextProfile);
@@ -276,10 +290,10 @@ export function ProfileView() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load your profile. Please try again."
+          : t("profile.unavailable")
       );
     }
-  }, [loadLocationOptions, syncProfile]);
+  }, [loadLocationOptions, syncProfile, t]);
 
   useEffect(() => {
     loadProfile();
@@ -304,7 +318,7 @@ export function ProfileView() {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setError("Please select an image file.");
+      setError(t("profile.imageOnly"));
       return;
     }
 
@@ -357,7 +371,7 @@ export function ProfileView() {
 
   function detectLocation() {
     if (!navigator.geolocation) {
-      setError("Geolocation is not available in this browser.");
+      setError(t("profile.geolocationUnsupported"));
       return;
     }
 
@@ -374,7 +388,7 @@ export function ProfileView() {
         setIsDetectingLocation(false);
       },
       () => {
-        setError("Unable to detect your location. Check location permissions and try again.");
+        setError(t("profile.geolocationError"));
         setIsDetectingLocation(false);
       }
     );
@@ -393,12 +407,12 @@ export function ProfileView() {
     try {
       syncProfile(await profileService.uploadAvatar(formData));
       clearAvatarSelection();
-      setNotice("Profile photo updated successfully.");
+      setNotice(t("profile.photoUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to upload the profile photo. Please try again."
+          : t("profile.photoError")
       );
     } finally {
       setAction(null);
@@ -417,12 +431,12 @@ export function ProfileView() {
         ...current,
         disabilityTypeId: personal.hasDisability === "Yes" ? personal.disabilityTypeId : null
       }));
-      setNotice("Personal details updated successfully.");
+      setNotice(t("profile.personalUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update personal details. Please try again."
+          : t("profile.personalError")
       );
     } finally {
       setAction(null);
@@ -437,12 +451,12 @@ export function ProfileView() {
 
     try {
       syncProfile(await profileService.updateAddress(address));
-      setNotice("Residence address updated successfully.");
+      setNotice(t("profile.addressUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update the residence address. Please try again."
+          : t("profile.addressError")
       );
     } finally {
       setAction(null);
@@ -457,12 +471,12 @@ export function ProfileView() {
 
     try {
       syncProfile(await profileService.updateOccupation(occupation));
-      setNotice("Occupation details updated successfully.");
+      setNotice(t("profile.occupationUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update occupation details. Please try again."
+          : t("profile.occupationError")
       );
     } finally {
       setAction(null);
@@ -477,12 +491,12 @@ export function ProfileView() {
 
     try {
       syncProfile(await profileService.updateWishes(wishesEditor));
-      setNotice("Youth wishes updated successfully.");
+      setNotice(t("profile.wishesUpdated"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to update youth wishes. Please try again."
+          : t("profile.wishesError")
       );
     } finally {
       setAction(null);
@@ -525,13 +539,13 @@ export function ProfileView() {
   }
 
   const sections = [
-    { title: "Occupation", icon: BriefcaseBusiness, items: profile.occupations },
-    { title: "Education", icon: BookOpen, items: profile.educations },
-    { title: "Skills", icon: Sparkles, items: profile.skills },
-    { title: "Languages", icon: Languages, items: profile.languages },
-    { title: "Pathways", icon: Route, items: profile.pathways },
-    { title: "Wishes", icon: Target, items: profile.wishes },
-    { title: "Documents", icon: FileText, items: profile.documents }
+    { title: t("profile.occupation"), icon: BriefcaseBusiness, items: profile.occupations, emptyText: t("profile.noOccupation"), documents: false },
+    { title: t("profile.education"), icon: BookOpen, items: profile.educations, emptyText: t("profile.noEducation"), documents: false },
+    { title: t("profile.skills"), icon: Sparkles, items: profile.skills, emptyText: t("profile.noSkills"), documents: false },
+    { title: t("profile.languages"), icon: Languages, items: profile.languages, emptyText: t("profile.noLanguages"), documents: false },
+    { title: t("profile.pathways"), icon: Route, items: profile.pathways, emptyText: t("profile.noPathways"), documents: false },
+    { title: t("profile.wishes"), icon: Target, items: profile.wishes, emptyText: t("profile.noWishes"), documents: false },
+    { title: t("profile.documents"), icon: FileText, items: profile.documents, emptyText: t("profile.noDocuments"), documents: true }
   ];
   const missingSections = sections
     .filter(({ items }) => items.length === 0)
@@ -569,6 +583,12 @@ export function ProfileView() {
   const filteredWishSectors = occupationSectors.filter(
     (sector) => !wish.sectorCategoryId || sector.categoryId === wish.sectorCategoryId
   );
+  const assignedScope = registration?.scope.assigned_level
+    ? t(locationTranslationKeys[registration.scope.assigned_level])
+    : t("common.location");
+  const editableLevels = registration?.scope.editable_levels.length
+    ? registration.scope.editable_levels.map((level) => t(locationTranslationKeys[level])).join(", ")
+    : t("profile.assignedOnly");
 
   return (
     <div className="space-y-5">
@@ -581,7 +601,7 @@ export function ProfileView() {
                   // A plain image supports backend-provided absolute or relative avatar URLs.
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    alt={`${profile.name} profile`}
+                    alt={t("profile.photoAlt", { name: profile.name })}
                     className="h-full w-full object-cover"
                     src={avatarPreviewUrl ?? profile.avatarUrl}
                   />
@@ -591,7 +611,7 @@ export function ProfileView() {
               </div>
               <label className="mt-2 inline-flex min-h-9 cursor-pointer items-center justify-center rounded-md border border-white/30 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20">
                 <Camera className="mr-1.5" size={15} />
-                {profile.avatarUrl ? "Change photo" : "Upload photo"}
+                {profile.avatarUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
                 <input
                   accept="image/*"
                   className="sr-only"
@@ -609,10 +629,10 @@ export function ProfileView() {
                 <span
                   className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${journeyBadgeClass(profile.journeyStatus)}`}
                 >
-                  Journey: {formatStatus(profile.journeyStatus)}
+                  {t("profile.journey")}: {translateStatus(profile.journeyStatus, t)}
                 </span>
                 <span className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
-                  Registration: {formatStatus(profile.registrationStatus)}
+                  {t("profile.registration")}: {translateStatus(profile.registrationStatus, t)}
                 </span>
               </div>
             </div>
@@ -625,7 +645,7 @@ export function ProfileView() {
 
         {avatarFile ? (
           <div className="mt-4 flex flex-col gap-2 rounded-md border border-white/20 bg-white/10 p-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="truncate text-sm text-brand-50">Selected: {avatarFile.name}</p>
+            <p className="truncate text-sm text-brand-50">{t("common.selectedFile", { name: avatarFile.name })}</p>
             <div className="flex gap-2">
               <button
                 className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md border border-white/30 px-3 text-xs font-semibold text-white hover:bg-white/10 disabled:opacity-60 sm:flex-none"
@@ -634,7 +654,7 @@ export function ProfileView() {
                 type="button"
               >
                 <X className="mr-1.5" size={15} />
-                Cancel
+                {t("profile.cancelPhoto")}
               </button>
               <button
                 className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-white px-3 text-xs font-semibold text-brand-700 hover:bg-brand-50 disabled:opacity-60 sm:flex-none"
@@ -647,7 +667,7 @@ export function ProfileView() {
                 ) : (
                   <Upload className="mr-1.5" size={15} />
                 )}
-                Upload photo
+                {t("profile.uploadPhotoAction")}
               </button>
             </div>
           </div>
@@ -668,7 +688,7 @@ export function ProfileView() {
         <section className="rounded-lg border border-amber-200 bg-amber-50 p-4">
           <h2 className="text-sm font-semibold text-amber-900">{t("profile.sectionsToComplete")}</h2>
           <p className="mt-1 text-sm text-amber-800">
-            Add {missingSections.join(", ")} to strengthen your youth journey profile.
+            {t("profile.completeSections", { sections: missingSections.join(", ") })}
           </p>
         </section>
       ) : null}
@@ -690,14 +710,14 @@ export function ProfileView() {
       <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-ink">{t("profile.overview")}</h2>
         <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          <div><dt className="font-medium text-slate-500">Phone</dt><dd className="mt-1 text-ink">{displayValue(profile.phoneNumber)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Email</dt><dd className="mt-1 break-all text-ink">{displayValue(profile.email)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Birth date</dt><dd className="mt-1 text-ink">{displayValue(profile.birthDate)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Gender</dt><dd className="mt-1 text-ink">{displayValue(profile.gender)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Marital status</dt><dd className="mt-1 text-ink">{displayValue(profile.maritalStatus)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Disability</dt><dd className="mt-1 text-ink">{profile.hasDisability === "Yes" && disabilityTypeName ? `Yes / ${disabilityTypeName}` : displayValue(profile.hasDisability)}</dd></div>
-          <div><dt className="font-medium text-slate-500">Occupation</dt><dd className="mt-1 text-ink">{profile.occupations.length ? profile.occupations.join(", ") : "Not provided"}</dd></div>
-          <div><dt className="font-medium text-slate-500">Youth wishes</dt><dd className="mt-1 text-ink">{profile.wishes.length ? profile.wishes.join(", ") : "Not provided"}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("common.phone")}</dt><dd className="mt-1 text-ink">{displayValue(profile.phoneNumber)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("common.email")}</dt><dd className="mt-1 break-all text-ink">{displayValue(profile.email)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("common.birthDate")}</dt><dd className="mt-1 text-ink">{displayValue(profile.birthDate)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("common.gender")}</dt><dd className="mt-1 text-ink">{translateFixedValue(profile.gender)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("profile.maritalStatus")}</dt><dd className="mt-1 text-ink">{translateFixedValue(profile.maritalStatus)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("profile.disability")}</dt><dd className="mt-1 text-ink">{profile.hasDisability === "Yes" && disabilityTypeName ? `${t("common.yes")} / ${disabilityTypeName}` : translateFixedValue(profile.hasDisability)}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("profile.occupation")}</dt><dd className="mt-1 text-ink">{profile.occupations.length ? profile.occupations.join(", ") : t("common.notProvided")}</dd></div>
+          <div><dt className="font-medium text-slate-500">{t("profile.wishes")}</dt><dd className="mt-1 text-ink">{profile.wishes.length ? profile.wishes.join(", ") : t("common.notProvided")}</dd></div>
         </dl>
       </section>
 
@@ -707,31 +727,31 @@ export function ProfileView() {
           <h2 className="text-lg font-semibold text-ink">{t("profile.residenceAddress")}</h2>
         </div>
         <p className="mt-3 text-sm text-slate-700">
-          {profile.residence?.physicalAddress ?? "Physical address not provided"}
+          {profile.residence?.physicalAddress ?? t("profile.physicalAddressMissing")}
         </p>
         <p className="mt-1 text-sm text-slate-500">
-          {profile.residence?.location ?? "Location not specified"}
+          {profile.residence?.location ?? t("profile.locationMissing")}
         </p>
         {profile.residence?.latitude || profile.residence?.longitude ? (
           <p className="mt-1 text-xs text-slate-500">
-            Coordinates: {profile.residence.latitude ?? "-"}, {profile.residence.longitude ?? "-"}
+            {t("profile.coordinates")}: {profile.residence.latitude ?? "-"}, {profile.residence.longitude ?? "-"}
           </p>
         ) : null}
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        {sections.map(({ title, icon: Icon, items }) => (
+        {sections.map(({ title, icon: Icon, items, emptyText, documents }) => (
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" key={title}>
             <div className="flex items-center gap-2">
               <Icon className="text-brand-700" size={20} />
               <h2 className="font-semibold text-ink">{title}</h2>
-              {title === "Documents" ? (
+              {documents ? (
                 <span className="ml-auto rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
                   {items.length}
                 </span>
               ) : null}
             </div>
-            <ProfileList items={items} emptyText={`No ${title.toLowerCase()} recorded.`} />
+            <ProfileList items={items} emptyText={emptyText} />
           </article>
         ))}
       </section>
@@ -740,12 +760,12 @@ export function ProfileView() {
         <div>
           <h2 className="text-lg font-semibold text-ink">{t("profile.editOccupation")}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Update your work status and sector so opportunity matching stays useful.
+            {t("profile.occupationHelp")}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Occupation type/status</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.occupationType")}</span>
             <select
               className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               disabled={action !== null}
@@ -760,7 +780,7 @@ export function ProfileView() {
               required
               value={occupation.occupationType}
             >
-              <option value="">Select occupation</option>
+              <option value="">{t("profile.selectOccupation")}</option>
               {occupationTypes.map((option) => (
                 <option key={option} value={option}>{option}</option>
               ))}
@@ -769,7 +789,7 @@ export function ProfileView() {
           {occupationUsesSector ? (
             <>
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Sector category</span>
+                <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.sectorCategory")}</span>
                 <select
                   className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
                   disabled={action !== null}
@@ -783,14 +803,14 @@ export function ProfileView() {
                   required
                   value={occupation.sectorCategoryId ?? ""}
                 >
-                  <option value="">Select category</option>
+                  <option value="">{t("profile.selectCategory")}</option>
                   {sectorCategories.map((option) => (
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
                 </select>
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Occupation sector</span>
+                <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.occupationSector")}</span>
                 <select
                   className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
                   disabled={action !== null || !occupation.sectorCategoryId}
@@ -803,7 +823,7 @@ export function ProfileView() {
                   required
                   value={occupation.occupationSectorId ?? ""}
                 >
-                  <option value="">Select sector</option>
+                  <option value="">{t("profile.selectSector")}</option>
                   {filteredOccupationSectors.map((option) => (
                     <option key={option.id} value={option.id}>{option.name}</option>
                   ))}
@@ -822,11 +842,11 @@ export function ProfileView() {
         <div>
           <h2 className="text-lg font-semibold text-ink">{t("profile.editWishes")}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Tell YTS what opportunities you want to pursue next.
+            {t("profile.wishesHelp")}
           </p>
         </div>
         <label className="block">
-          <span className="mb-2 block text-sm font-medium text-slate-700">Do you have wishes/interests?</span>
+          <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.hasWishes")}</span>
           <select
             className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
             disabled={action !== null}
@@ -839,14 +859,14 @@ export function ProfileView() {
             required
             value={wishesEditor.youthWishes}
           >
-            <option value="No">No</option>
-            <option value="Yes">Yes</option>
+            <option value="No">{t("common.no")}</option>
+            <option value="Yes">{t("common.yes")}</option>
           </select>
         </label>
         {wishesEditor.youthWishes === "Yes" ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Interest type</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.interestType")}</span>
               <select
                 className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
                 disabled={action !== null}
@@ -859,14 +879,14 @@ export function ProfileView() {
                 required
                 value={wish.interestType}
               >
-                <option value="">Select interest</option>
+                <option value="">{t("profile.selectInterest")}</option>
                 {interestTypes.map((option) => (
                   <option key={option} value={option}>{option}</option>
                 ))}
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Wish sector category</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.wishSectorCategory")}</span>
               <select
                 className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
                 disabled={action !== null}
@@ -885,14 +905,14 @@ export function ProfileView() {
                 required
                 value={wish.sectorCategoryId ?? ""}
               >
-                <option value="">Select category</option>
+                <option value="">{t("profile.selectCategory")}</option>
                 {sectorCategories.map((option) => (
                   <option key={option.id} value={option.id}>{option.name}</option>
                 ))}
               </select>
             </label>
             <label className="block">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Wish sector</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.wishSector")}</span>
               <select
                 className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
                 disabled={action !== null || !wish.sectorCategoryId}
@@ -905,14 +925,14 @@ export function ProfileView() {
                 required
                 value={wish.wishSectorId ?? ""}
               >
-                <option value="">Select sector</option>
+                <option value="">{t("profile.selectSector")}</option>
                 {filteredWishSectors.map((option) => (
                   <option key={option.id} value={option.id}>{option.name}</option>
                 ))}
               </select>
             </label>
             <label className="block sm:col-span-2">
-              <span className="mb-2 block text-sm font-medium text-slate-700">Wish description</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.wishDescription")}</span>
               <textarea
                 className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
                 disabled={action !== null}
@@ -922,7 +942,7 @@ export function ProfileView() {
                     wishes: [{ ...wish, description: event.target.value }]
                   }))
                 }
-                placeholder="Example: I am interested in organic farming or greenhouse management."
+                placeholder={t("profile.wishPlaceholder")}
                 value={wish.description}
               />
             </label>
@@ -969,9 +989,9 @@ export function ProfileView() {
               required
               value={personal.gender}
             >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
+              <option value="">{t("profile.selectGender")}</option>
+              <option value="Male">{t("common.male")}</option>
+              <option value="Female">{t("common.female")}</option>
             </select>
           </label>
           <label className="block">
@@ -982,7 +1002,7 @@ export function ProfileView() {
               required
               value={personal.religionId ?? ""}
             >
-              <option value="">Select religion</option>
+              <option value="">{t("profile.selectReligion")}</option>
               {religions.map((option) => (
                 <option key={option.id} value={option.id}>{option.name}</option>
               ))}
@@ -996,12 +1016,12 @@ export function ProfileView() {
               required
               value={personal.maritalStatus}
             >
-              <option value="">Select status</option>
-              <option value="Single">Single</option>
-              <option value="Married">Married</option>
-              <option value="Divorced">Divorced</option>
-              <option value="Widowed">Widowed</option>
-              <option value="Widow/Widower">Widow/Widower</option>
+              <option value="">{t("profile.selectStatus")}</option>
+              <option value="Single">{t("common.single")}</option>
+              <option value="Married">{t("common.married")}</option>
+              <option value="Divorced">{t("common.divorced")}</option>
+              <option value="Widowed">{t("common.widowed")}</option>
+              <option value="Widow/Widower">{t("common.widowed")}</option>
             </select>
           </label>
           <label className="block">
@@ -1012,9 +1032,9 @@ export function ProfileView() {
               required
               value={personal.hasDisability}
             >
-              <option value="">Select</option>
-              <option value="Yes">Yes</option>
-              <option value="No">No</option>
+              <option value="">{t("common.select")}</option>
+              <option value="Yes">{t("common.yes")}</option>
+              <option value="No">{t("common.no")}</option>
             </select>
           </label>
         </div>
@@ -1027,7 +1047,7 @@ export function ProfileView() {
               required
               value={personal.disabilityTypeId ?? ""}
             >
-              <option value="">Select disability type</option>
+              <option value="">{t("profile.selectDisability")}</option>
               {registration?.options.disability_types.map((option) => (
                 <option key={option.id} value={option.id}>{option.name}</option>
               ))}
@@ -1042,16 +1062,16 @@ export function ProfileView() {
         <div>
           <h2 className="text-lg font-semibold text-ink">{t("profile.editAddress")}</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Update your residence within your assigned {registration?.scope.assigned_level ?? "location"} scope.
+            {t("profile.addressHelp", { scope: assignedScope })}
           </p>
         </div>
         <div className="rounded-md border border-brand-100 bg-brand-50 p-3 text-sm text-brand-700">
-          You can change: {registration?.scope.editable_levels.join(", ") || "assigned location only"}.
+          {t("profile.canChange", { levels: editableLevels })}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {(["country", "region", "district", "division", "ward", "street"] as LocationLevel[]).map((level) => (
             <label className="block" key={level}>
-              <span className="mb-2 block text-sm font-medium capitalize text-slate-700">{level}</span>
+              <span className="mb-2 block text-sm font-medium text-slate-700">{t(locationTranslationKeys[level])}</span>
               <select
                 className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100 disabled:bg-slate-100"
                 disabled={action !== null || !isLocationEditable(level)}
@@ -1059,7 +1079,7 @@ export function ProfileView() {
                 required
                 value={address[addressKey(level)] ?? ""}
               >
-                <option value="">Select {level}</option>
+                <option value="">{t("profile.selectLocation", { level: t(locationTranslationKeys[level]).toLowerCase() })}</option>
                 {locationOptions[level].map((option) => (
                   <option key={option.id} value={option.id}>{option.name}</option>
                 ))}
@@ -1067,14 +1087,14 @@ export function ProfileView() {
             </label>
           ))}
         </div>
-        <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Physical address</span><textarea className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setAddress((current) => ({ ...current, physicalAddress: event.target.value }))} required value={address.physicalAddress} /></label>
+        <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.physicalAddress")}</span><textarea className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" onChange={(event) => setAddress((current) => ({ ...current, physicalAddress: event.target.value }))} required value={address.physicalAddress} /></label>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Latitude</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, latitude: event.target.value }))} placeholder="-6.000000" type="number" step="any" value={address.latitude} /></label>
-          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">Longitude</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, longitude: event.target.value }))} placeholder="39.000000" type="number" step="any" value={address.longitude} /></label>
+          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.latitude")}</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, latitude: event.target.value }))} placeholder="-6.000000" type="number" step="any" value={address.latitude} /></label>
+          <label className="block"><span className="mb-2 block text-sm font-medium text-slate-700">{t("profile.longitude")}</span><input className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-100" inputMode="decimal" onChange={(event) => setAddress((current) => ({ ...current, longitude: event.target.value }))} placeholder="39.000000" type="number" step="any" value={address.longitude} /></label>
         </div>
         <Button disabled={action !== null || isDetectingLocation} onClick={detectLocation} type="button" variant="secondary">
           {isDetectingLocation ? <Loader2 className="mr-2 animate-spin" size={18} /> : <LocateFixed className="mr-2" size={18} />}
-          Use current GPS location
+          {t("profile.useGps")}
         </Button>
         <Button className="w-full sm:w-auto" disabled={action !== null} type="submit">{action === "address" ? <Loader2 className="mr-2 animate-spin" size={18} /> : <Save className="mr-2" size={18} />}{t("profile.saveAddress")}</Button>
       </form>

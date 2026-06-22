@@ -37,7 +37,7 @@ function formatLocation(value: unknown) {
     .map((key) => readString(location, key))
     .filter((part): part is string => Boolean(part));
 
-  return parts.length > 0 ? parts.join(", ") : "Location not specified";
+  return parts.length > 0 ? parts.join(", ") : "-";
 }
 
 function normalizeOpportunity(value: unknown): OpportunitySummary {
@@ -51,13 +51,13 @@ function normalizeOpportunity(value: unknown): OpportunitySummary {
 
   return {
     id: readString(opportunity, "id") ?? "",
-    title: readString(opportunity, "title") ?? "Untitled opportunity",
+    title: readString(opportunity, "title") ?? "-",
     description: readString(opportunity, "description"),
     statusCode: readString(status, "code") ?? "unknown",
-    statusLabel: readString(status, "label") ?? "Unknown",
-    typeLabel: readString(type, "label") ?? "Not specified",
-    stakeholderName: readString(stakeholder, "name") ?? "Not specified",
-    sectorName: readString(sector, "name") ?? "Not specified",
+    statusLabel: readString(status, "label") ?? "-",
+    typeLabel: readString(type, "label") ?? "-",
+    stakeholderName: readString(stakeholder, "name") ?? "-",
+    sectorName: readString(sector, "name") ?? "-",
     location: formatLocation(opportunity.location),
     stipendAmount:
       stipendAmount !== undefined && Number.isFinite(stipendAmount)

@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type { YouthForumsResponse } from "@/types/forums";
 import { formatForumDate, forumStatusBadgeClass } from "./formatters";
 import { forumsService } from "./service";
@@ -110,7 +111,7 @@ export function ForumsList() {
                   <p className="mt-1 text-sm text-slate-600">{forum.forumType}</p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${forumStatusBadgeClass(forum.status)}`}>
-                  {forum.status}
+                  {translateStatus(forum.status, t)}
                 </span>
               </div>
 

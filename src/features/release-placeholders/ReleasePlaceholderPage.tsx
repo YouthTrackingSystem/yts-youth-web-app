@@ -24,7 +24,7 @@ export function ReleasePlaceholderPage({
   return (
     <div className="space-y-5">
       <section className="rounded-lg bg-brand-700 px-5 py-6 text-white shadow-soft">
-        <p className="text-sm font-medium text-brand-100">Youth portal</p>
+        <p className="text-sm font-medium text-brand-100">{t("app.shortName")}</p>
         <h1 className="mt-2 text-2xl font-semibold">{title}</h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-brand-50">
           {message}

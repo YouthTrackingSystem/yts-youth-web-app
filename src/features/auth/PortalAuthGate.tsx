@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PortalShell } from "@/components/layout/PortalShell";
+import { useTranslation } from "@/hooks/useTranslation";
 import type { YouthSessionState } from "@/types/auth";
 import { authService } from "./service";
 
@@ -13,6 +14,7 @@ type PortalAuthGateProps = {
 
 export function PortalAuthGate({ children }: PortalAuthGateProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [session, setSession] = useState<YouthSessionState | null>(null);
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export function PortalAuthGate({ children }: PortalAuthGateProps) {
       <main className="flex min-h-screen items-center justify-center bg-mist">
         <div className="flex items-center gap-3 text-sm text-slate-600">
           <Loader2 className="animate-spin text-brand-700" size={20} />
-          Loading your session
+          {t("auth.loadingSession")}
         </div>
       </main>
     );

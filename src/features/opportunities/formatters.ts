@@ -1,6 +1,8 @@
-export function formatOpportunityDate(value?: string) {
+import type { LanguageCode } from "@/lib/i18n/translations";
+
+export function formatOpportunityDate(value: string | undefined, language: LanguageCode, fallback: string) {
   if (!value) {
-    return "Not specified";
+    return fallback;
   }
 
   const date = new Date(`${value}T00:00:00`);
@@ -9,33 +11,23 @@ export function formatOpportunityDate(value?: string) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en-TZ", {
+  return new Intl.DateTimeFormat(language === "sw" ? "sw-TZ" : "en-TZ", {
     day: "numeric",
     month: "short",
     year: "numeric"
   }).format(date);
 }
 
-export function formatStipend(value?: number) {
+export function formatStipend(value: number | undefined, language: LanguageCode, fallback: string) {
   if (value === undefined) {
-    return "Not specified";
+    return fallback;
   }
 
-  return new Intl.NumberFormat("en-TZ", {
+  return new Intl.NumberFormat(language === "sw" ? "sw-TZ" : "en-TZ", {
     style: "currency",
     currency: "TZS",
     maximumFractionDigits: 0
   }).format(value);
-}
-
-export function formatStatus(value?: string) {
-  if (!value) {
-    return "Submitted";
-  }
-
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 export function opportunityStatusBadgeClass(statusCode: string) {

@@ -54,9 +54,7 @@ export function LoginForm() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : caughtError instanceof Error
-            ? caughtError.message
-            : t("login.error")
+          : t("login.error")
       );
       setIsSubmitting(false);
     }

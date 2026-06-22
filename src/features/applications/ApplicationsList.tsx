@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type { YouthApplicationSummary } from "@/types/youth";
 import {
   applicationStatusBadgeClass,
@@ -21,7 +22,7 @@ import {
 import { applicationsService } from "./service";
 
 export function ApplicationsList() {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [applications, setApplications] =
     useState<YouthApplicationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +72,9 @@ export function ApplicationsList() {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <ClipboardList className="mx-auto text-brand-700" size={30} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">{t("applications.empty")}</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("applications.emptyTitle")}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          {t("applications.empty")}
+          {t("applications.emptyHelp")}
         </p>
       </section>
     );
@@ -84,7 +85,7 @@ export function ApplicationsList() {
       <header>
         <h1 className="text-2xl font-semibold text-ink">{t("applications.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          {t("dashboard.trackApplicationsHelp")}
+          {t("applications.subtitle")}
         </p>
       </header>
 
@@ -106,16 +107,16 @@ export function ApplicationsList() {
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
               >
-                {application.statusLabel}
+                {translateStatus(application.statusCode || application.statusLabel, t)}
               </span>
             </div>
 
             <div className="mt-4 rounded-md bg-slate-50 p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Cover note
+                {t("applications.coverNote")}
               </p>
               <p className="mt-1 line-clamp-3 text-sm leading-6 text-slate-700">
-                {application.coverNote ?? "No cover note provided."}
+                {application.coverNote ?? t("applications.noCoverNote")}
               </p>
             </div>
 
@@ -123,15 +124,15 @@ export function ApplicationsList() {
               <div className="flex gap-2">
                 <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">Applied</dt>
-                  <dd>{formatApplicationDate(application.appliedAt)}</dd>
+                  <dt className="font-medium text-ink">{t("applications.applied")}</dt>
+                  <dd>{formatApplicationDate(application.appliedAt, language, t("common.notAvailable"))}</dd>
                 </div>
               </div>
               <div className="flex gap-2">
                 <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">Decision</dt>
-                  <dd>{formatApplicationDate(application.decisionAt)}</dd>
+                  <dt className="font-medium text-ink">{t("applications.decision")}</dt>
+                  <dd>{formatApplicationDate(application.decisionAt, language, t("common.notAvailable"))}</dd>
                 </div>
               </div>
             </dl>
@@ -140,7 +141,7 @@ export function ApplicationsList() {
               className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-600 focus:ring-offset-2"
               href={`/applications/${application.id}`}
             >
-              {application.isDraft ? t("applications.saveDraft") : t("applications.viewApplication")}
+              {application.isDraft ? t("applications.editDraftAction") : t("applications.viewApplication")}
               <ArrowRight className="ml-2" size={18} />
             </Link>
           </article>

@@ -70,8 +70,8 @@ function normalizeApplication(value: unknown): YouthApplicationSummary {
   return {
     id: readString(application, "id") ?? "",
     opportunityId: readString(application, "opportunity_id") ?? "",
-    opportunityTitle: readString(opportunity, "title") ?? "Untitled opportunity",
-    stakeholderName: readString(stakeholder, "name") ?? "Not specified",
+    opportunityTitle: readString(opportunity, "title") ?? "-",
+    stakeholderName: readString(stakeholder, "name") ?? "-",
     statusCode,
     statusLabel: readString(status, "label") ?? statusCode,
     coverNote: readString(application, "cover_note"),

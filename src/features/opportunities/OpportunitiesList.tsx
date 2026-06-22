@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateOpportunityType } from "@/lib/i18n/opportunityType";
+import { translateStatus } from "@/lib/i18n/status";
 import type { OpportunitySummary } from "@/types/youth";
 import {
   formatOpportunityDate,
@@ -24,7 +26,7 @@ import {
 import { opportunitiesService } from "./service";
 
 export function OpportunitiesList() {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [opportunities, setOpportunities] = useState<OpportunitySummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,9 +75,9 @@ export function OpportunitiesList() {
     return (
       <section className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
         <BriefcaseBusiness className="mx-auto text-brand-700" size={30} />
-        <h1 className="mt-3 text-lg font-semibold text-ink">{t("opportunities.empty")}</h1>
+        <h1 className="mt-3 text-lg font-semibold text-ink">{t("opportunities.noAvailableTitle")}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          {t("opportunities.empty")}
+          {t("opportunities.emptyHelp")}
         </p>
       </section>
     );
@@ -86,7 +88,7 @@ export function OpportunitiesList() {
       <header>
         <h1 className="text-2xl font-semibold text-ink">{t("opportunities.title")}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          {t("dashboard.browseOpportunitiesHelp")}
+          {t("opportunities.subtitle")}
         </p>
       </header>
 
@@ -98,7 +100,7 @@ export function OpportunitiesList() {
           >
             <div className="flex flex-wrap gap-2 text-xs font-medium">
               <span className="rounded-full bg-brand-50 px-3 py-1 text-brand-700">
-                {opportunity.typeLabel}
+                {translateOpportunityType(opportunity.typeLabel, t)}
               </span>
               <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
                 {opportunity.sectorName}
@@ -106,7 +108,7 @@ export function OpportunitiesList() {
               <span
                 className={`rounded-full px-3 py-1 ${opportunityStatusBadgeClass(opportunity.statusCode)}`}
               >
-                {opportunity.statusLabel}
+                {translateStatus(opportunity.statusCode || opportunity.statusLabel, t)}
               </span>
             </div>
 
@@ -119,24 +121,24 @@ export function OpportunitiesList() {
               <div className="flex gap-2">
                 <MapPin className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">Location</dt>
+                  <dt className="font-medium text-ink">{t("common.location")}</dt>
                   <dd>{opportunity.location}</dd>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Banknote className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">Stipend</dt>
-                  <dd>{formatStipend(opportunity.stipendAmount)}</dd>
+                  <dt className="font-medium text-ink">{t("opportunities.stipend")}</dt>
+                  <dd>{formatStipend(opportunity.stipendAmount, language, t("common.notProvided"))}</dd>
                 </div>
               </div>
               <div className="flex gap-2 sm:col-span-2">
                 <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={17} />
                 <div>
-                  <dt className="font-medium text-ink">{t("nav.applications")}</dt>
+                  <dt className="font-medium text-ink">{t("opportunities.applicationDates")}</dt>
                   <dd>
-                    {formatOpportunityDate(opportunity.opensAt)} to{" "}
-                    {formatOpportunityDate(opportunity.closesAt)}
+                    {formatOpportunityDate(opportunity.opensAt, language, t("common.notAvailable"))} {t("common.to")}{" "}
+                    {formatOpportunityDate(opportunity.closesAt, language, t("common.notAvailable"))}
                   </dd>
                 </div>
               </div>

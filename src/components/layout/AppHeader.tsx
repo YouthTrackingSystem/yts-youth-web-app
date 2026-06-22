@@ -17,7 +17,7 @@ export function AppHeader({ session }: AppHeaderProps) {
   const router = useRouter();
   const { t } = useTranslation();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const name = session.status === "authenticated" ? session.user.name : "Youth";
+  const name = session.status === "authenticated" ? session.user.name : t("common.youth");
 
   async function handleLogout() {
     setIsLoggingOut(true);

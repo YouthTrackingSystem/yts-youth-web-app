@@ -288,7 +288,7 @@ function normalizeProfile(response: unknown): YouthProfileSummary | null {
           physicalAddress: readString(residenceRecord, "physical_address"),
           latitude: readString(residenceRecord, "latitude"),
           longitude: readString(residenceRecord, "longitude"),
-          location: locationParts.join(", ") || "Location not specified"
+          location: locationParts.join(", ") || "-"
         }
       : null,
     occupationEditor,

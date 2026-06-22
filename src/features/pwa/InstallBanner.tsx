@@ -3,8 +3,10 @@
 import { CheckCircle2, Download, Loader2, Share, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { usePwaInstall } from "@/hooks/usePwaInstall";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export function InstallBanner() {
+  const { t } = useTranslation();
   const {
     canInstall,
     dismiss,
@@ -24,9 +26,9 @@ export function InstallBanner() {
       >
         <CheckCircle2 className="mt-0.5 shrink-0 text-green-700" size={22} />
         <div>
-          <h2 className="font-semibold">Youth Portal installed</h2>
+          <h2 className="font-semibold">{t("pwa.installedTitle")}</h2>
           <p className="mt-1 text-sm text-green-800">
-            You can now open it from your home screen or applications menu.
+            {t("pwa.installedHelp")}
           </p>
         </div>
       </section>
@@ -44,15 +46,15 @@ export function InstallBanner() {
           <Smartphone size={21} />
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="font-semibold text-ink">Install YTS Youth Portal</h2>
+          <h2 className="font-semibold text-ink">{t("pwa.installTitle")}</h2>
           {isIosSafari && !canInstall ? (
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Tap <Share className="mx-1 inline-block align-text-bottom" size={17} />
-              Share, then choose <strong>Add to Home Screen</strong>.
+              <Share className="mr-1 inline-block align-text-bottom" size={17} />
+              {t("pwa.iosHelpBefore")}
             </p>
           ) : (
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Add the portal to your device for quicker access and an app-like experience.
+              {t("pwa.installHelp")}
             </p>
           )}
         </div>
@@ -60,7 +62,7 @@ export function InstallBanner() {
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:justify-end">
         <Button disabled={isInstalling} onClick={dismiss} variant="secondary">
-          Not now
+          {t("pwa.notNow")}
         </Button>
         {canInstall ? (
           <Button disabled={isInstalling} onClick={install}>
@@ -69,7 +71,7 @@ export function InstallBanner() {
             ) : (
               <Download className="mr-2" size={18} />
             )}
-            Install
+            {t("pwa.install")}
           </Button>
         ) : null}
       </div>

@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type { YouthGroupsResponse } from "@/types/groups";
 import { formatGroupDate, groupStatusBadgeClass } from "./formatters";
 import { groupsService } from "./service";
@@ -110,7 +111,7 @@ export function GroupsList() {
                   <p className="mt-1 text-sm text-slate-600">{group.groupType}</p>
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${groupStatusBadgeClass(group.status)}`}>
-                  {group.status}
+                  {translateStatus(group.status, t)}
                 </span>
               </div>
 

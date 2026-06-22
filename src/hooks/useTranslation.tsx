@@ -8,6 +8,7 @@ import {
   useMemo,
   useState
 } from "react";
+import { usePathname } from "next/navigation";
 import {
   defaultLanguage,
   languages,
@@ -26,6 +27,23 @@ type TranslationContextValue = {
 
 const TranslationContext = createContext<TranslationContextValue | null>(null);
 
+function pageTitleKey(pathname: string): TranslationKey | null {
+  if (pathname === "/login") return "login.title";
+  if (pathname === "/registration-application") return "registration.title";
+  if (pathname === "/dashboard") return "dashboard.title";
+  if (pathname === "/profile") return "profile.title";
+  if (pathname === "/opportunities") return "opportunities.title";
+  if (/^\/opportunities\/[^/]+$/.test(pathname)) return "meta.opportunityDetails";
+  if (pathname === "/applications") return "applications.title";
+  if (/^\/applications\/[^/]+$/.test(pathname)) return "meta.applicationDetails";
+  if (pathname === "/groups") return "groups.title";
+  if (/^\/groups\/[^/]+$/.test(pathname)) return "meta.groupDetails";
+  if (pathname === "/forums") return "forums.title";
+  if (/^\/forums\/[^/]+$/.test(pathname)) return "meta.forumDetails";
+  if (pathname === "/offline") return "offline.title";
+  return null;
+}
+
 function isLanguageCode(value: string | null): value is LanguageCode {
   return languages.some((language) => language.code === value);
 }
@@ -40,6 +58,7 @@ function interpolate(value: string, params?: Record<string, string | number>) {
 }
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
   const [language, setLanguageState] = useState<LanguageCode>(defaultLanguage);
 
   useEffect(() => {
@@ -66,7 +85,11 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.lang = language;
-  }, [language]);
+    const titleKey = pageTitleKey(pathname);
+    document.title = titleKey
+      ? `${translations[language][titleKey]} | ${translations[language]["app.name"]}`
+      : translations[language]["app.name"];
+  }, [language, pathname]);
 
   return <TranslationContext.Provider value={value}>{children}</TranslationContext.Provider>;
 }

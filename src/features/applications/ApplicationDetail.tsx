@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type {
   YouthApplicationDraftInput,
   YouthApplicationSummary
@@ -39,7 +40,7 @@ const emptyDraft: YouthApplicationDraftInput = {
 };
 
 export function ApplicationDetail({ id }: ApplicationDetailProps) {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [application, setApplication] = useState<YouthApplicationSummary | null>(null);
   const [draft, setDraft] = useState<YouthApplicationDraftInput>(emptyDraft);
   const [error, setError] = useState<string | null>(null);
@@ -67,10 +68,10 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load this application. Please try again."
+          : t("applications.unavailable")
       );
     }
-  }, [id, syncApplication]);
+  }, [id, syncApplication, t]);
 
   useEffect(() => {
     loadApplication();
@@ -93,7 +94,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
       /\.(pdf|doc|docx)$/i.test(file.name);
 
     if (!isAcceptedType) {
-      setError("Please select a PDF, DOC, or DOCX file.");
+      setError(t("applications.invalidCv"));
       return;
     }
 
@@ -115,12 +116,12 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
     try {
       syncApplication(await applicationsService.uploadCv(id, formData));
       setCvFile(null);
-      setNotice("CV uploaded successfully.");
+      setNotice(t("applications.cvSuccess"));
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to upload CV. Please try again."
+          : t("applications.cvUploadError")
       );
     } finally {
       setCvAction(null);
@@ -141,7 +142,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to download CV. Please try again."
+          : t("applications.cvDownloadError")
       );
     } finally {
       setCvAction(null);
@@ -156,7 +157,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
     if (
       nextAction === "submit" &&
       !window.confirm(
-        "Submit this application? You will not be able to edit it afterward."
+        t("applications.submitConfirm")
       )
     ) {
       return;
@@ -171,18 +172,18 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 
       if (nextAction === "submit") {
         syncApplication(await applicationsService.submitDraft(id));
-        setNotice("Application submitted successfully.");
+        setNotice(t("applications.submitSuccess"));
       } else {
         syncApplication(savedApplication);
-        setNotice("Draft saved successfully.");
+        setNotice(t("applications.draftSuccess"));
       }
     } catch (caughtError) {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
           : nextAction === "submit"
-            ? "Unable to submit this application. Please try again."
-            : "Unable to save this draft. Please try again."
+            ? t("applications.submitError")
+            : t("applications.draftError")
       );
     } finally {
       setAction(null);
@@ -239,7 +240,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           <span
             className={`rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
           >
-            {application.statusLabel}
+            {translateStatus(application.statusCode || application.statusLabel, t)}
           </span>
         </div>
 
@@ -247,18 +248,18 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           <div className="flex gap-3">
             <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Applied at</dt>
+              <dt className="font-semibold text-ink">{t("applications.appliedAt")}</dt>
               <dd className="mt-1 text-slate-600">
-                {formatApplicationDate(application.appliedAt)}
+                {formatApplicationDate(application.appliedAt, language, t("common.notAvailable"))}
               </dd>
             </div>
           </div>
           <div className="flex gap-3">
             <CalendarDays className="mt-0.5 shrink-0 text-brand-700" size={19} />
             <div>
-              <dt className="font-semibold text-ink">Decision at</dt>
+              <dt className="font-semibold text-ink">{t("applications.decisionAt")}</dt>
               <dd className="mt-1 text-slate-600">
-                {formatApplicationDate(application.decisionAt)}
+                {formatApplicationDate(application.decisionAt, language, t("common.notAvailable"))}
               </dd>
             </div>
           </div>
@@ -308,22 +309,25 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 
         {application.isDraft ? (
           <div className="space-y-3 border-t border-slate-200 pt-4">
-            <label className="block">
+            <div>
               <span className="mb-2 block text-sm font-medium text-slate-700">
                 {t("applications.uploadCv")}
               </span>
-              <input
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-md file:border-0 file:bg-brand-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-brand-700"
-                disabled={cvAction !== null}
-                onChange={selectCv}
-                type="file"
-              />
-            </label>
+              <label className="inline-flex min-h-10 cursor-pointer items-center rounded-md bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 transition hover:bg-brand-100 focus-within:outline-none focus-within:ring-2 focus-within:ring-brand-600 focus-within:ring-offset-2">
+                {application.hasCv ? t("applications.replaceCv") : t("applications.chooseFile")}
+                <input
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  className="sr-only"
+                  disabled={cvAction !== null}
+                  onChange={selectCv}
+                  type="file"
+                />
+              </label>
+            </div>
 
             {cvFile ? (
               <div className="rounded-md bg-slate-50 p-3 text-sm text-slate-700">
-                Selected: {cvFile.name}
+                {t("applications.selectedCv", { name: cvFile.name })}
               </div>
             ) : null}
 
@@ -358,7 +362,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-slate-700">
-              Cover note
+              {t("applications.coverNote")}
             </span>
             <textarea
               className="min-h-36 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
@@ -370,7 +374,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
 
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-slate-700">
-              Portfolio URL
+              {t("applications.portfolioUrl")}
             </span>
             <input
               className="h-11 w-full rounded-md border border-slate-300 px-3 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
@@ -382,7 +386,7 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
           </label>
 
           <label className="block">
-            <span className="mb-2 block text-sm font-medium text-slate-700">Notes</span>
+            <span className="mb-2 block text-sm font-medium text-slate-700">{t("applications.notes")}</span>
             <textarea
               className="min-h-28 w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-100"
               onChange={(event) => updateDraft("notes", event.target.value)}
@@ -423,13 +427,13 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
       ) : (
         <section className="space-y-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
           <div>
-            <h2 className="text-sm font-semibold text-ink">Cover note</h2>
+            <h2 className="text-sm font-semibold text-ink">{t("applications.coverNote")}</h2>
             <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
-              {application.coverNote ?? "No cover note provided."}
+              {application.coverNote ?? t("applications.noCoverNote")}
             </p>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-ink">Portfolio URL</h2>
+            <h2 className="text-sm font-semibold text-ink">{t("applications.portfolioUrl")}</h2>
             {application.portfolioUrl ? (
               <a
                 className="mt-2 block break-all text-sm font-medium text-brand-700 hover:underline"
@@ -440,13 +444,13 @@ export function ApplicationDetail({ id }: ApplicationDetailProps) {
                 {application.portfolioUrl}
               </a>
             ) : (
-              <p className="mt-2 text-sm text-slate-600">Not provided</p>
+              <p className="mt-2 text-sm text-slate-600">{t("common.notProvided")}</p>
             )}
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-ink">Notes</h2>
+            <h2 className="text-sm font-semibold text-ink">{t("applications.notes")}</h2>
             <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">
-              {application.notes ?? "No notes provided."}
+              {application.notes ?? t("applications.noNotes")}
             </p>
           </div>
         </section>

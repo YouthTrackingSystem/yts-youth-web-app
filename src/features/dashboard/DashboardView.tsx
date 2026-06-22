@@ -22,11 +22,12 @@ import {
 import { InstallBanner } from "@/features/pwa/InstallBanner";
 import { useTranslation } from "@/hooks/useTranslation";
 import { ApiError } from "@/lib/api/errors";
+import { translateStatus } from "@/lib/i18n/status";
 import type { DashboardSummary, YouthApplicationSummary } from "@/types/youth";
 import { dashboardService } from "./service";
 
 export function DashboardView() {
-  const { t } = useTranslation();
+  const { language, t } = useTranslation();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [recentApplications, setRecentApplications] = useState<YouthApplicationSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,10 +49,10 @@ export function DashboardView() {
       setError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load the dashboard. Please try again."
+          : t("dashboard.loadError")
       );
     }
-  }, []);
+  }, [t]);
 
   const loadRecentApplications = useCallback(async () => {
     setApplicationsError(null);
@@ -62,10 +63,10 @@ export function DashboardView() {
       setApplicationsError(
         caughtError instanceof ApiError
           ? caughtError.message
-          : "Unable to load recent applications."
+          : t("dashboard.recentError")
       );
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadDashboard();
@@ -279,13 +280,13 @@ export function DashboardView() {
                           {application.stakeholderName}
                         </p>
                         <p className="mt-2 text-sm text-slate-500">
-                          {t("dashboard.appliedSubmitted")}: {formatApplicationDate(application.appliedAt)}
+                          {t("dashboard.appliedSubmitted")}: {formatApplicationDate(application.appliedAt, language, t("common.notAvailable"))}
                         </p>
                       </div>
                       <span
                         className={`w-fit rounded-full px-3 py-1 text-xs font-semibold ${applicationStatusBadgeClass(application.statusCode)}`}
                       >
-                        {application.statusLabel}
+                        {translateStatus(application.statusCode || application.statusLabel, t)}
                       </span>
                     </div>
                     <Link

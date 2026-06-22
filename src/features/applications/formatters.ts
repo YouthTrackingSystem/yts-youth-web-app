@@ -1,6 +1,8 @@
-export function formatApplicationDate(value?: string) {
+import type { LanguageCode } from "@/lib/i18n/translations";
+
+export function formatApplicationDate(value: string | undefined, language: LanguageCode, fallback: string) {
   if (!value) {
-    return "Not available";
+    return fallback;
   }
 
   const normalized = value.includes("T") ? value : value.replace(" ", "T");
@@ -10,7 +12,7 @@ export function formatApplicationDate(value?: string) {
     return value;
   }
 
-  return new Intl.DateTimeFormat("en-TZ", {
+  return new Intl.DateTimeFormat(language === "sw" ? "sw-TZ" : "en-TZ", {
     day: "numeric",
     month: "short",
     year: "numeric",
